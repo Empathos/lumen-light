@@ -52,6 +52,7 @@ The live surface stays interactive and reversible. Long-term memory systems hand
 .
 ├── AGENTS.md
 ├── README.md
+├── ROADMAP.md
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   └── PRD.md
@@ -71,6 +72,8 @@ The live surface stays interactive and reversible. Long-term memory systems hand
 ## Current status
 
 Lumen Light is staged as a public product skeleton with a working static HTML highlight runtime. The current implementation defines the core architecture, product requirements, artifact schema, synthetic example, deterministic validation script, and browser demo.
+
+See `ROADMAP.md` for the staged public development path.
 
 Run the public-safe eval:
 
