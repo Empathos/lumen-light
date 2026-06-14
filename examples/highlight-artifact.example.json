@@ -1,0 +1,16 @@
+{
+  "artifact_id": "artifact_demo_highlight_001",
+  "kind": "highlight",
+  "text": "Important source text should stay selectable even when the visual layer changes.",
+  "source_turn_ids": ["turn_010"],
+  "surface": {
+    "object_id": "highlight_demo_001",
+    "selector": "demo-paragraph-1",
+    "state": "live"
+  },
+  "memory_enrichment": {
+    "target_systems": ["OpenReflect", "external-memory"],
+    "tags": ["highlight", "plain-text"]
+  },
+  "confidence": 0.88
+}

@@ -58,6 +58,7 @@ The live surface stays interactive and reversible. Long-term memory systems hand
 │   └── PRD.md
 ├── examples/
 │   ├── conversation-artifact.example.json
+│   ├── highlight-artifact.example.json
 │   └── static-highlight-demo.html
 ├── prompts/
 │   └── validate-artifact.prompt.md
@@ -79,6 +80,7 @@ Run the public-safe eval:
 
 ```bash
 python3 scripts/validate_artifact.py examples/conversation-artifact.example.json
+python3 scripts/validate_artifact.py examples/highlight-artifact.example.json
 node --check src/lumen-light.js
 ```
 
