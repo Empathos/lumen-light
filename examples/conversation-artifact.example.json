@@ -1,0 +1,17 @@
+{
+  "artifact_id": "artifact_demo_decision_001",
+  "kind": "decision",
+  "text": "Keep semantic highlighting as an optional layer over plain text.",
+  "source_turn_ids": ["turn_001", "turn_002"],
+  "surface": {
+    "object_id": "card_demo_001",
+    "x": 120,
+    "y": 80,
+    "state": "staged"
+  },
+  "memory_enrichment": {
+    "target_systems": ["OpenReflect", "external-memory"],
+    "tags": ["semantic-text", "surface-state"]
+  },
+  "confidence": 0.91
+}
