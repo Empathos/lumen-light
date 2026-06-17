@@ -27,7 +27,7 @@ See `docs/CONVERSATION-SURFACE-MODEL.md` for the consolidated conversation-surfa
 
 ## Static HTML highlighter
 
-The public browser runtime lives at `src/lumen-light.js`.
+The public browser runtime lives at `src/static-highlighter/lumen-light.js`.
 
 It is intentionally small:
 

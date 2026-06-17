@@ -119,6 +119,32 @@ Internal pane behavior:
 - render documents inside Lumen-owned panes and register each pane with the
   parent surface
 
+Current location:
+
+- `src/static-highlighter/`
+
+The static highlighter stays distinct from the larger whiteboard prototype so the minimal baseline remains easy to inspect, embed, and test.
+
+### 4a. Whiteboard Prototype
+
+Purpose: stand up a larger live conversation-to-canvas loop before componentizing it into stable Lumen modules.
+
+Features:
+
+- local Express/WebSocket server
+- Excalidraw browser canvas
+- staging and live modes
+- transcript chunking and turn queue concepts
+- agent provider paths
+- whiteboard editing tools
+- OpenAI Realtime and optional local transcription paths
+
+Current location:
+
+- `prototypes/lumen-light-whiteboard-prototype/`
+
+The prototype is extracted from the MIT-licensed AutoPreso project, renamed under Lumen Light, and kept separate until its pieces can be componentized into stable product modules.
+
 ### 5. Normalized Item Layer
 
 Purpose: convert turns and highlights into stable meaning units independent of

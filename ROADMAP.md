@@ -51,6 +51,17 @@ Goal: support nested documents and sub-surfaces inside a larger Lumen session.
 - Document same-origin iframe, cross-origin iframe, and internal-pane behavior.
 - Keep visual highlights local to the pane while artifacts live at the parent surface level.
 
+## Phase 2b: Whiteboard Prototype Extraction
+
+Goal: stand up the AutoPreso-derived whiteboard loop under a Lumen-owned prototype name.
+
+- Keep the original static highlighter isolated in `src/static-highlighter/`.
+- Extract the whiteboard prototype into `prototypes/lumen-light-whiteboard-prototype/`.
+- Preserve upstream MIT attribution and license.
+- Rename app-facing package, CLI, settings, and UI strings to Lumen Light Whiteboard Prototype.
+- Verify the prototype can install and bind locally before deeper refactoring.
+- Componentize the working loop into Lumen-owned modules after the prototype stands up.
+
 ## Phase 3: Generated Whiteboard Objects
 
 Goal: let visual objects become richer than simple shapes without losing inspectability.

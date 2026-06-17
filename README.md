@@ -70,8 +70,11 @@ The live surface stays interactive and reversible. Long-term memory systems hand
 │   └── conversation-artifact.schema.json
 ├── scripts/
 │   └── validate_artifact.py
-└── src/
-    └── lumen-light.js
+├── src/
+│   └── static-highlighter/
+│       └── lumen-light.js
+└── prototypes/
+    └── lumen-light-whiteboard-prototype/
 ```
 
 ## Current status
@@ -90,7 +93,7 @@ python3 -m pip install -r requirements.txt
 python3 scripts/validate_artifact.py examples/conversation-artifact.example.json
 python3 scripts/validate_artifact.py examples/highlight-artifact.example.json
 python3 scripts/validate_artifact.py examples/staged-card-artifact.example.json
-node --check src/lumen-light.js
+node --check src/static-highlighter/lumen-light.js
 ```
 
 Open the static demo in a browser:

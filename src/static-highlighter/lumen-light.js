@@ -2,7 +2,7 @@
  * Lumen Light: browser text highlights for static HTML.
  *
  * Drop this file into a page with:
- *   <script src="../src/lumen-light.js"></script>
+ *   <script src="../src/static-highlighter/lumen-light.js"></script>
  *
  * Manual highlights are gold. API-created partner highlights are purple.
  * Highlights persist in localStorage and can be exported with window.lumen.export().
