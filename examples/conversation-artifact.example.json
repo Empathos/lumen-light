@@ -5,8 +5,12 @@
   "source_turn_ids": ["turn_001", "turn_002"],
   "surface": {
     "object_id": "card_demo_001",
+    "object_type": "card",
+    "operation": "insert",
     "x": 120,
     "y": 80,
+    "width": 280,
+    "height": 120,
     "state": "staged"
   },
   "memory_enrichment": {

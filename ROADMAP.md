@@ -11,6 +11,7 @@ Status: current
 - Define the public product thesis and architecture.
 - Publish a dependency-free static HTML highlighter.
 - Provide a synthetic artifact schema and fixture.
+- Consolidate earlier conversation-surface prototype concepts into Lumen Light primitives.
 - Keep examples public-safe and deterministic.
 - Document the public/private operating model.
 
@@ -29,6 +30,7 @@ Goal: make the browser highlighter useful as a shared briefing surface.
 
 Goal: move from highlighted text to a shared visual workspace.
 
+- Use normalized items as the source of surface objects.
 - Add a canvas where participants can draw, annotate, and place shapes.
 - Support cards, arrows, groups, freehand marks, and lightweight diagrams.
 - Let realtime model sessions propose visual objects during discussion.
@@ -56,8 +58,8 @@ Goal: let visual objects become richer than simple shapes without losing inspect
 
 Goal: connect live conversation to an inspectable thinking surface.
 
-- Define a turn queue format for voice and text input.
-- Add staging semantics for agent-proposed cards and diagrams.
+- Expand the turn queue format for voice, text, highlights, and manual edits.
+- Add deterministic staging semantics for agent-proposed cards and diagrams.
 - Support realtime model integrations, including OpenAI Realtime and Gemini Realtime style adapters.
 - Keep automated surface changes reviewable before they become live state.
 - Document how external memory systems should consume emitted artifacts.
@@ -80,6 +82,7 @@ The next public release should be able to:
 - run the static highlight demo locally,
 - validate all synthetic fixtures,
 - export browser highlights as structured records,
+- explain the turn queue and staged surface model,
 - use a shared briefing page as a review surface,
 - explain how public artifacts map to private operational use,
 - remain useful without any private infrastructure.

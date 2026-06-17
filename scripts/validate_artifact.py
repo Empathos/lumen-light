@@ -7,16 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-
-VALID_KINDS = {
-    "highlight",
-    "card",
-    "diagram_node",
-    "diagram_edge",
-    "decision",
-    "question",
-    "action",
-}
+from jsonschema import Draft202012Validator
 
 
 def fail(message: str) -> int:
@@ -30,18 +21,15 @@ def main() -> int:
 
     path = Path(sys.argv[1])
     data = json.loads(path.read_text(encoding="utf-8"))
+    schema_path = Path(__file__).resolve().parents[1] / "schemas" / "conversation-artifact.schema.json"
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
 
-    if not str(data.get("artifact_id", "")).startswith("artifact_"):
-        return fail("artifact_id must start with artifact_")
-    if data.get("kind") not in VALID_KINDS:
-        return fail("kind is not recognized")
-    if not isinstance(data.get("text"), str) or not data["text"].strip():
-        return fail("text is required")
-    if not isinstance(data.get("source_turn_ids"), list) or not data["source_turn_ids"]:
-        return fail("source_turn_ids must be a non-empty list")
-    confidence = data.get("confidence")
-    if not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1:
-        return fail("confidence must be between 0 and 1")
+    validator = Draft202012Validator(schema)
+    errors = sorted(validator.iter_errors(data), key=lambda error: list(error.path))
+    if errors:
+        error = errors[0]
+        location = ".".join(str(part) for part in error.path) or "artifact"
+        return fail(f"{location}: {error.message}")
 
     print("LUMEN_LIGHT_ARTIFACT_OK")
     return 0

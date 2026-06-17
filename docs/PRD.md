@@ -29,6 +29,7 @@ Lumen Light turns live conversation into a structured thinking surface. It shoul
 ## v0.1 requirements
 
 - Define a conversation artifact schema.
+- Define the conversation surface model: turns, normalized items, staged changes, live surface, and export packets.
 - Validate synthetic artifact records.
 - Document the realtime loop and public/private model.
 - Keep the surface architecture independent from any single memory backend.
@@ -37,4 +38,5 @@ Lumen Light turns live conversation into a structured thinking surface. It shoul
 
 - Synthetic artifacts validate deterministically.
 - The architecture separates live surface state from memory-enrichment output.
+- Beacon Table prototype concepts are distilled into public product primitives rather than copied as legacy files.
 - Public docs explain the product without private operational context.

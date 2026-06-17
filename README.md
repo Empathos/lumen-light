@@ -55,10 +55,13 @@ The live surface stays interactive and reversible. Long-term memory systems hand
 ├── ROADMAP.md
 ├── docs/
 │   ├── ARCHITECTURE.md
+│   ├── CONVERSATION-SURFACE-MODEL.md
 │   └── PRD.md
 ├── examples/
 │   ├── conversation-artifact.example.json
 │   ├── highlight-artifact.example.json
+│   ├── staged-card-artifact.example.json
+│   ├── turn-queue.example.json
 │   └── static-highlight-demo.html
 ├── prompts/
 │   └── validate-artifact.prompt.md
@@ -74,13 +77,17 @@ The live surface stays interactive and reversible. Long-term memory systems hand
 
 Lumen Light is staged as a public product skeleton with a working static HTML highlight runtime. The current implementation defines the core architecture, product requirements, artifact schema, synthetic example, deterministic validation script, and browser demo.
 
+The conversation-surface model consolidates earlier prototype lessons into public primitives: turns, normalized items, staged changes, live surface state, and artifact export packets.
+
 See `ROADMAP.md` for the staged public development path.
 
 Run the public-safe eval:
 
 ```bash
+python3 -m pip install -r requirements.txt
 python3 scripts/validate_artifact.py examples/conversation-artifact.example.json
 python3 scripts/validate_artifact.py examples/highlight-artifact.example.json
+python3 scripts/validate_artifact.py examples/staged-card-artifact.example.json
 node --check src/lumen-light.js
 ```
 

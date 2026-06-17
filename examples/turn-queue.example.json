@@ -1,0 +1,19 @@
+{
+  "session_id": "session_demo_001",
+  "turns": [
+    {
+      "turn_id": "turn_001",
+      "speaker": "facilitator",
+      "text": "Let's keep semantic highlighting separate from durable memory.",
+      "timestamp": "2026-01-01T12:00:00Z",
+      "source": "typed"
+    },
+    {
+      "turn_id": "turn_002",
+      "speaker": "participant",
+      "text": "The canvas should show the idea, but the export should preserve the evidence.",
+      "timestamp": "2026-01-01T12:00:08Z",
+      "source": "typed"
+    }
+  ]
+}

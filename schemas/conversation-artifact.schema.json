@@ -21,13 +21,37 @@
       "items": { "type": "string" },
       "minItems": 1
     },
+    "source_span": {
+      "type": "object",
+      "properties": {
+        "selector": { "type": "string" },
+        "exact": { "type": "string" },
+        "prefix": { "type": "string" },
+        "suffix": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
     "surface": {
       "type": "object",
       "properties": {
         "object_id": { "type": "string" },
+        "object_type": {
+          "type": "string",
+          "enum": ["highlight", "card", "diagram_node", "diagram_edge", "group", "viewport"]
+        },
+        "operation": {
+          "type": "string",
+          "enum": ["insert", "update", "delete", "connect", "focus_viewport", "replace_projection"]
+        },
+        "selector": { "type": "string" },
         "x": { "type": "number" },
         "y": { "type": "number" },
-        "state": { "type": "string" }
+        "width": { "type": "number" },
+        "height": { "type": "number" },
+        "state": {
+          "type": "string",
+          "enum": ["staged", "live", "rejected", "archived"]
+        }
       },
       "additionalProperties": false
     },
