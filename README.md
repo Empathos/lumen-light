@@ -1,14 +1,14 @@
 # Lumen Light
 
-Lumen Light is a realtime thinking surface for turning live conversation into structured text, cards, diagrams, whiteboard state, and memory-enrichment artifacts.
+Lumen Light is a realtime thinking surface for conversations that are too important to leave as plain transcripts.
 
-The project combines a visual collaboration surface with a semantic text layer. It keeps the live workspace useful in the moment while producing durable, structured artifacts that can enrich OpenReflect or other external memory systems.
+It listens to live discussion as it becomes useful structure: highlights, cards, diagrams, staged whiteboard changes, and memory-enrichment artifacts. The goal is to let a conversation become a working surface while it is happening, then leave behind clean records that external memory systems can trust.
 
 ## Why it exists
 
-Conversation is where many decisions, questions, corrections, and design insights first appear. Standard transcripts preserve words, but they do not preserve enough structure to help people think with the conversation while it is happening.
+Conversation is where many decisions, questions, corrections, and design insights first appear. Standard transcripts preserve the words after the fact, but they flatten the live shape of the work: what mattered, what changed, what needs review, and what should become durable.
 
-Lumen Light exists to make conversation operationally visible: important text can be highlighted, ideas can become cards, relationships can become diagrams, and memory systems can receive structured artifacts instead of raw dumps.
+Lumen Light exists to make that shape visible. Important text can be highlighted, ideas can become cards, relationships can become diagrams, and memory systems can receive structured artifacts instead of raw dumps.
 
 ## Core idea
 
