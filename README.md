@@ -56,6 +56,7 @@ The live surface stays interactive and reversible. Long-term memory systems hand
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── CONVERSATION-SURFACE-MODEL.md
+│   ├── FEATURE-MAP.md
 │   └── PRD.md
 ├── examples/
 │   ├── conversation-artifact.example.json
@@ -79,6 +80,7 @@ Lumen Light is staged as a public product skeleton with a working static HTML hi
 
 The conversation-surface model consolidates earlier prototype lessons into public primitives: turns, normalized items, staged changes, live surface state, and artifact export packets.
 
+See `docs/FEATURE-MAP.md` for the master feature map and roadmap.
 See `ROADMAP.md` for the staged public development path.
 
 Run the public-safe eval:

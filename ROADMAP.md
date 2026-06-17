@@ -4,6 +4,9 @@ This roadmap keeps the public repo focused on reusable product substance.
 Environment-specific deployment, private transcripts, and operational logs belong
 in private downstream repositories or branches.
 
+See `docs/FEATURE-MAP.md` for the master feature map that this roadmap
+executes against.
+
 ## Phase 0: Public Baseline
 
 Status: current
@@ -36,6 +39,17 @@ Goal: move from highlighted text to a shared visual workspace.
 - Let realtime model sessions propose visual objects during discussion.
 - Keep model-proposed objects staged until accepted by the user or policy.
 - Preserve plain text, surface state, and provenance as separate layers.
+
+## Phase 2a: Pane and Nested-Window Highlighting
+
+Goal: support nested documents and sub-surfaces inside a larger Lumen session.
+
+- Register nested panes with stable pane and document identities.
+- Run pane-local highlighter instances where Lumen owns the rendered content.
+- Emit pane-local highlight events to the parent artifact registry.
+- Add source-span fields for surface, pane, and document identity.
+- Document same-origin iframe, cross-origin iframe, and internal-pane behavior.
+- Keep visual highlights local to the pane while artifacts live at the parent surface level.
 
 ## Phase 3: Generated Whiteboard Objects
 
