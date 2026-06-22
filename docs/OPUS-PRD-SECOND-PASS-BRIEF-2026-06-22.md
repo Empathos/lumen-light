@@ -29,13 +29,19 @@ The second review should analyze Lumen Light as both:
 ## Revised Product Thesis
 
 Lumen Light is a shared briefing and thinking surface where a human and an AI
-agent work through source material together using chat, source highlighting,
-whiteboarding, and eventually audio/video.
+agent work through source material together using realtime voice, chat, source
+highlighting, whiteboarding, and eventually richer audio/video.
 
 The product breaks the agent out of a scrolling text window. Instead of the
 assistant only replying in chat, the agent can point to evidence, explain it,
 highlight relevant passages, arrange concepts on a whiteboard, and help the
 human review or accept durable artifacts.
+
+The agent's role is closer to a live briefer or presenter than a passive
+summarizer. It is responsible for helping the human move through the material:
+introducing what matters, calling attention to evidence, explaining why a
+passage is important, arranging the shared visual surface, and pausing for
+human correction or approval.
 
 The human can inspect the source, follow the agent's interpretation, correct or
 redirect the agent, approve or reject proposed artifacts, and export a sourced
@@ -56,6 +62,11 @@ grounded in the source. The agent talks or chats about the content, highlights
 the evidence it is referring to, and builds a parallel whiteboard or briefing
 surface of emerging artifacts.
 
+The intended prototype/MVP interaction layer includes the OpenAI Realtime API
+for low-latency spoken agent interaction. The user should be able to experience
+the agent as a live briefer: speaking through material, pointing at source
+evidence, and updating the visual surface as the briefing unfolds.
+
 Instead of what?
 
 - reading alone
@@ -75,6 +86,7 @@ The interface gives the human and agent several coordinated surfaces:
 
 - a source pane, where the document or transcript remains inspectable
 - a chat or briefing pane, where the agent explains and discusses the material
+- a realtime voice layer, using OpenAI Realtime API in the prototype/MVP path
 - a highlight layer, where relevant source spans are visibly grounded
 - a whiteboard or visual surface, where the agent and human arrange emerging
   claims, decisions, questions, risks, actions, and relationships
@@ -98,7 +110,10 @@ Finished Lumen Light should feel less like a chatbot and less like a generic
 canvas. It should feel like an agent-led briefing room.
 
 The agent is not just answering. It is presenting, pointing, arranging,
-highlighting, and co-thinking with the human.
+highlighting, and co-thinking with the human. Its closest role model is a live
+briefer: someone who has prepared the material, understands the structure, can
+walk the room through it, and can respond when the audience asks for
+clarification, evidence, or a different framing.
 
 The whiteboard is valuable because it gives the agent and human a shared visual
 workspace. The source highlights are valuable because they keep interpretation
@@ -126,6 +141,7 @@ and interaction model:
 - source material
 - source spans and highlights
 - agent briefing turns
+- realtime voice turns
 - human responses and approvals
 - normalized items
 - staged artifacts
@@ -154,18 +170,27 @@ Key features:
 - pane identity
 - source metadata
 
-### 2. Agent Briefing Pane
+### 2. Agent Briefing And Voice Layer
 
-The agent needs a visible modality for explaining the source. This may begin as
-chat and later become audio or AV.
+The agent needs visible and spoken modalities for explaining the source. The
+prototype/MVP path should explicitly account for OpenAI Realtime API as the
+low-latency voice layer. Chat remains useful, but the product should not be
+designed as chat-first with audio bolted on later.
 
 Key features:
 
 - agent explanations
+- realtime spoken briefing turns
 - user questions and redirects
+- low-latency interruption/correction loop
 - references from agent messages to source spans
 - references from agent messages to whiteboard/artifact objects
 - distinction between literal source content and agent interpretation
+- transcript capture of spoken agent/human turns when needed for provenance
+
+The briefer role matters here. The agent is not simply waiting for questions.
+It is actively guiding attention through the material, using voice, text,
+highlights, and the whiteboard as coordinated presentation channels.
 
 ### 3. Highlight Layer
 
@@ -220,11 +245,12 @@ Key features:
 - optional visual projection metadata
 - memory-enrichment hints
 
-### 7. Audio And Future AV
+### 7. Realtime Audio And Future AV
 
-Audio should become a natural extension of the briefing modality. The user
-should eventually be able to hear the agent talk through the material while the
-interface highlights source passages and updates the visual surface.
+Audio is part of the intended interaction model, not only a distant add-on. The
+prototype/MVP should use the OpenAI Realtime API to explore the core experience:
+the user hears the agent talk through the material while the interface
+highlights source passages and updates the visual surface.
 
 Future AV could combine:
 
@@ -234,7 +260,10 @@ Future AV could combine:
 - artifact review
 - generated walkthroughs or recap videos
 
-This should be treated as a future-generation capability, not an MVP blocker.
+Full video/AV generation should be treated as a future-generation capability,
+not an MVP blocker. Realtime spoken briefing, however, should be considered part
+of the core product exploration because it changes how the human experiences
+the agent: as a briefer inside a shared surface, not merely text in a chat pane.
 
 ## What Opus Should Re-Assess
 
@@ -254,11 +283,15 @@ Assess:
 5. How the PRD should describe the relationship between source text, agent
    interpretation, whiteboard projection, human approval, and durable artifact.
 6. Whether the Excalidraw prototype should remain as the MVP canvas renderer.
-7. Where the current repo already supports this framing.
-8. Where the current repo contradicts, obscures, or under-specifies this
+7. How OpenAI Realtime API should fit into the MVP without making the
+   user-facing PRD overly provider-specific.
+8. How to describe the agent's briefer/presenter role in concrete product
+   terms.
+9. Where the current repo already supports this framing.
+10. Where the current repo contradicts, obscures, or under-specifies this
    framing.
-9. What the user-facing PRD should say in its first 500 words.
-10. What build sequence would best move from current repo state to a coherent
+11. What the user-facing PRD should say in its first 500 words.
+12. What build sequence would best move from current repo state to a coherent
     MVP.
 
 ## Desired Output From Opus
@@ -277,4 +310,3 @@ Return:
 Be direct. If this framing is too broad, say where. If the artifact contract
 should still be primary, explain how to present it without losing the
 human-agent interaction surface.
-
