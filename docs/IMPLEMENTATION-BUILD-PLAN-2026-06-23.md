@@ -6,6 +6,10 @@ Purpose: turn the current product framing into codeable, testable steps. This
 is not a philosophy document. It is the build plan for getting Lumen Light into
 a local testable state.
 
+For the overnight implementation spec with concrete data shapes, UI behavior,
+acceptance criteria, and out-of-scope boundaries, use
+`docs/OVERNIGHT-BRIEFING-REVIEW-BUILD-SPEC-2026-06-23.md`.
+
 ## Build Target
 
 Build a local agent-led briefing surface where one user can load source
