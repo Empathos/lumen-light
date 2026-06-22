@@ -1,0 +1,9 @@
+{
+  "name": "lumen-light",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Lumen Light briefing review demo: assistant/operator-controlled source briefing surface.",
+  "scripts": {
+    "test": "node --test \"test/briefing-review/**/*.test.js\""
+  }
+}

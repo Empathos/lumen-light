@@ -103,6 +103,47 @@ Open the static demo in a browser:
 examples/static-highlight-demo.html
 ```
 
+## Briefing review demo
+
+The briefing review demo is the first assistant/operator-controlled product
+loop: load source material, step through scripted agent briefing turns, watch
+the referenced source span highlight, accept/reject/edit the staged artifacts,
+and export the accepted packet as JSON. There is no voice, model call, or
+canvas in this slice — it runs entirely off a deterministic fixture.
+
+Run the Node test harness (artifact state machine + source anchoring):
+
+```bash
+npm test
+```
+
+Open the demo locally. It fetches a JSON fixture, so serve over HTTP rather
+than opening the file directly:
+
+```bash
+python3 -m http.server 8787
+```
+
+```text
+http://localhost:8787/examples/briefing-review-demo.html
+```
+
+Manual loop: click a briefing turn (or use Next/Previous), confirm the source
+span highlights, accept one artifact and reject or edit another, then click
+"Export accepted" — the packet should contain accepted artifacts only, each
+with a source span reference. "Debug export (all)" includes every state.
+
+Relevant files:
+
+```text
+src/briefing-review/state.js        artifact state machine + export packet
+src/briefing-review/source-pane.js  scoped source span anchoring + rendering
+src/briefing-review/demo.js         browser demo controller (operator actions)
+examples/briefing-session.example.json   synthetic fixture
+examples/briefing-review-demo.html       demo page
+test/briefing-review/                    Node tests for anchoring and state
+```
+
 Expected validator output:
 
 ```text

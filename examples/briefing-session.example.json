@@ -1,0 +1,98 @@
+{
+  "session_id": "briefing_session_001",
+  "title": "Synthetic strategy review",
+  "source": {
+    "document_id": "doc_001",
+    "title": "Strategy excerpt",
+    "text": "Enterprise onboarding takes six weeks on average right now. Sales reports that enterprise onboarding is the top blocker for expansion deals this quarter. The team agreed to cut onboarding to two weeks by Q3. One open question is whether self-serve onboarding can replace the manual setup steps without losing the white-glove feel."
+  },
+  "spans": [
+    {
+      "span_id": "span_001",
+      "document_id": "doc_001",
+      "exact": "enterprise onboarding is the top blocker for expansion deals",
+      "prefix": "Sales reports that ",
+      "suffix": " this quarter",
+      "kind": "evidence"
+    },
+    {
+      "span_id": "span_002",
+      "document_id": "doc_001",
+      "exact": "cut onboarding to two weeks by Q3",
+      "prefix": "The team agreed to ",
+      "suffix": ".",
+      "kind": "evidence"
+    },
+    {
+      "span_id": "span_003",
+      "document_id": "doc_001",
+      "exact": "self-serve onboarding can replace the manual setup steps",
+      "prefix": "whether ",
+      "suffix": " without",
+      "kind": "evidence"
+    },
+    {
+      "span_id": "span_stale",
+      "document_id": "doc_001",
+      "exact": "a sentence that no longer exists in this source",
+      "prefix": "",
+      "suffix": "",
+      "kind": "evidence"
+    }
+  ],
+  "briefing_turns": [
+    {
+      "turn_id": "turn_001",
+      "speaker": "agent",
+      "text": "Sales is flagging onboarding as the thing standing between you and expansion. I want to mark that as a risk.",
+      "source_span_refs": ["span_001"],
+      "proposed_artifact_ids": ["artifact_001"]
+    },
+    {
+      "turn_id": "turn_002",
+      "speaker": "agent",
+      "text": "The team already committed to a target here: onboarding down to two weeks by Q3. That reads like a decision worth keeping.",
+      "source_span_refs": ["span_002"],
+      "proposed_artifact_ids": ["artifact_002"]
+    },
+    {
+      "turn_id": "turn_003",
+      "speaker": "agent",
+      "text": "There is still an open question about whether self-serve can carry the load without losing the white-glove feel.",
+      "source_span_refs": ["span_003"],
+      "proposed_artifact_ids": ["artifact_003"]
+    }
+  ],
+  "artifacts": [
+    {
+      "artifact_id": "artifact_001",
+      "kind": "risk",
+      "state": "staged",
+      "text": "Enterprise onboarding friction is the top blocker for expansion deals.",
+      "source_span_refs": ["span_001"],
+      "created_from_turn_id": "turn_001",
+      "agent_interpretation": "The agent inferred an expansion risk from the sales report passage.",
+      "original_text": "Enterprise onboarding friction is the top blocker for expansion deals."
+    },
+    {
+      "artifact_id": "artifact_002",
+      "kind": "decision",
+      "state": "staged",
+      "text": "Cut onboarding time from six weeks to two weeks by Q3.",
+      "source_span_refs": ["span_002"],
+      "created_from_turn_id": "turn_002",
+      "agent_interpretation": "The agent captured the committed target as a decision.",
+      "original_text": "Cut onboarding time from six weeks to two weeks by Q3."
+    },
+    {
+      "artifact_id": "artifact_003",
+      "kind": "question",
+      "state": "staged",
+      "text": "Can self-serve onboarding replace manual setup without losing the white-glove experience?",
+      "source_span_refs": ["span_003"],
+      "created_from_turn_id": "turn_003",
+      "agent_interpretation": "The agent surfaced the unresolved tradeoff as an open question.",
+      "original_text": "Can self-serve onboarding replace manual setup without losing the white-glove experience?"
+    }
+  ]
+}
