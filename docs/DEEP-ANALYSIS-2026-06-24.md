@@ -89,8 +89,8 @@ artifacts in one interface.
    not clearly leave with a durable record.
 4. The document briefing mode is still planned, not implemented, in the refined
    app.
-5. There are no unit tests yet for the refined app's pure canvas normalizers and
-   offline provider, even though the docs name them as priority targets.
+5. There are no unit tests yet for the refined app's pure canvas normalizers,
+   even though the docs name them as priority targets.
 6. The Realtime endpoint is currently Vite dev middleware. Production needs a
    trusted endpoint with a safety identifier and deployment-specific controls.
 7. Bundle size needs later attention, but it should not block the MVP.
@@ -103,7 +103,7 @@ Build one integrated, deterministic hero demo before expanding infrastructure:
 2. Add `highlight_source` and `focus_source` tools.
 3. Add a local staged-artifact queue using the proven top-level review-state
    rules.
-4. Let typed text first drive the whole loop offline:
+4. Let typed text first drive the whole loop through the same live tool contract:
    brief turn -> source highlight -> TLDraw drawing -> staged artifact.
 5. Add accept/reject/edit/export for staged artifacts.
 6. Then wire the same tools into the Realtime session.
