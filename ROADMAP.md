@@ -9,7 +9,7 @@ executes against.
 
 ## Phase 0: Public Baseline
 
-Status: current
+Status: superseded by the trunk-baseline consolidation
 
 - Define the public product thesis and architecture.
 - Publish a dependency-free static HTML highlighter.
@@ -17,6 +17,17 @@ Status: current
 - Consolidate earlier conversation-surface prototype concepts into Lumen Light primitives.
 - Keep examples public-safe and deterministic.
 - Document the public/private operating model.
+
+## Phase 0a: Trunk Baseline
+
+Status: current
+
+- Keep the root repository identity as Lumen-Light.
+- Treat `refined-lumen-light/` as the current canvas-first product trunk.
+- Remove offline fallback from product requirements.
+- Preserve the older root-level briefing/review implementation as source
+  material for provenance, staged artifacts, and export behavior.
+- Create a clean verified baseline before branching new feature work.
 
 ## Phase 1: Shared Highlighting and Briefing Page
 

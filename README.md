@@ -1,8 +1,19 @@
-# Lumen Light
+# Lumen-Light
 
 Lumen Light is a realtime thinking surface for conversations that are too important to leave as plain transcripts.
 
 It listens to live discussion as it becomes useful structure: highlights, cards, diagrams, staged whiteboard changes, and memory-enrichment artifacts. The goal is to let a conversation become a working surface while it is happening, then leave behind clean records that external memory systems can trust.
+
+## Current trunk
+
+The canonical project remains this root **Lumen-Light** repository. The current
+product trunk lives in [`refined-lumen-light/`](refined-lumen-light/) while the
+repo is being promoted into a clean canvas-first baseline.
+
+That app is the active Beacon Table direction: TLDraw as the main surface,
+OpenAI Realtime voice/text, tool-driven drawing, and a canvas-as-projection
+runtime contract. The older root-level briefing review code remains source
+material for provenance, staged artifacts, source spans, and export behavior.
 
 ## Why it exists
 
@@ -66,6 +77,11 @@ The live surface stays interactive and reversible. Long-term memory systems hand
 │   └── static-highlight-demo.html
 ├── prompts/
 │   └── validate-artifact.prompt.md
+├── refined-lumen-light/
+│   ├── PRD.md
+│   ├── docs/
+│   ├── server/
+│   └── src/
 ├── schemas/
 │   └── conversation-artifact.schema.json
 ├── scripts/
@@ -79,12 +95,33 @@ The live surface stays interactive and reversible. Long-term memory systems hand
 
 ## Current status
 
-Lumen Light is staged as a public product skeleton with a working static HTML highlight runtime. The current implementation defines the core architecture, product requirements, artifact schema, synthetic example, deterministic validation script, and browser demo.
+Lumen Light is being consolidated around the canvas-first Beacon Table app in
+`refined-lumen-light/`. The root-level implementation still defines the
+evidence-linked briefing/review contract, artifact schema, synthetic examples,
+deterministic validation script, and browser demo that should be ported forward.
 
 The conversation-surface model consolidates earlier prototype lessons into public primitives: turns, normalized items, staged changes, live surface state, and artifact export packets.
 
 See `docs/FEATURE-MAP.md` for the master feature map and roadmap.
 See `ROADMAP.md` for the staged public development path.
+See `docs/TRUNK-BASELINE-PLAN-2026-06-24.md` for the current trunk promotion
+plan.
+
+Run the current canvas-first app:
+
+```bash
+cd refined-lumen-light
+npm install
+npm run dev
+```
+
+Run its verification gates:
+
+```bash
+cd refined-lumen-light
+npm run typecheck
+npm run build
+```
 
 Run the public-safe eval:
 
