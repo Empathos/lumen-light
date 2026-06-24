@@ -1,212 +1,164 @@
-# Lumen-Light
+# Lumen Light
 
-Lumen Light is a realtime thinking surface for conversations that are too important to leave as plain transcripts.
+A voice-and-text **thinking canvas** where an AI collaborator diagrams your
+conversation as it happens.
 
-It listens to live discussion as it becomes useful structure: highlights, cards, diagrams, staged whiteboard changes, and memory-enrichment artifacts. The goal is to let a conversation become a working surface while it is happening, then leave behind clean records that external memory systems can trust.
+You open a large open whiteboard (TLDraw), talk or type, and the assistant turns
+what you say into flow diagrams and structure in real time — so the ideas become
+coherent while you're still working through them. The canvas is the main stage;
+the assistant draws on it with you.
 
-## Current trunk
+See [`PRD.md`](./PRD.md) for the product vision and scope.
 
-The canonical project remains this root **Lumen-Light** repository. The current
-product trunk lives in [`refined-lumen-light/`](refined-lumen-light/) while the
-repo is being promoted into a clean canvas-first baseline.
+## Documentation
 
-That app is the active Beacon Table direction: TLDraw as the main surface,
-OpenAI Realtime voice/text, tool-driven drawing, and a canvas-as-projection
-runtime contract. The older root-level briefing review code remains source
-material for provenance, staged artifacts, source spans, and export behavior.
+| Document | What's in it |
+|----------|--------------|
+| [`PRD.md`](./PRD.md) | Product vision, users, capabilities, scope. |
+| [`docs/SPEC.md`](./docs/SPEC.md) | Runtime contract (tools), commands, structure, boundaries, success criteria. |
+| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Components and the data/event flow. |
+| [`docs/decisions/`](./docs/decisions/) | ADRs — the *why* behind key choices. |
+| [`docs/TESTING.md`](./docs/TESTING.md) | How changes are verified. |
+| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | How to work on this project. |
 
-## Why it exists
+## Status
 
-Conversation is where many decisions, questions, corrections, and design insights first appear. Standard transcripts preserve the words after the fact, but they flatten the live shape of the work: what mattered, what changed, what needs review, and what should become durable.
+Early scaffold. Working today:
 
-Lumen Light exists to make that shape visible. Important text can be highlighted, ideas can become cards, relationships can become diagrams, and memory systems can receive structured artifacts instead of raw dumps.
+- TLDraw canvas as the main surface.
+- **OpenAI Realtime voice + text session** (`gpt-realtime-2` over WebRTC) where
+  the model calls a `draw_flow` tool to diagram the conversation live.
 
-## Core idea
+Both voice and typed text drive the **same** tool calls / canvas actions, so the
+input modality is fully decoupled from canvas behavior.
 
-```text
-voice/text input
-      |
-      v
-turn queue + semantic parser
-      |
-      +--> text light layer ---------> highlighted transcript
-      |
-      +--> canvas planner -----------> cards / diagrams / whiteboard
-      |
-      +--> artifact emitter ---------> OpenReflect / external memory systems
-```
+## Setup
 
-The live surface stays interactive and reversible. Long-term memory systems handle enrichment, provenance, recall, and insight over time.
-
-## What Lumen Light manages
-
-- A dependency-free browser highlighter for static HTML.
-- Realtime transcript-to-canvas updates.
-- Semantic text state such as speaker, state, intensity, and emphasis.
-- Cards, diagrams, and whiteboard objects derived from conversation.
-- Staging and live modes for agent-assisted canvas changes.
-- Structured memory-enrichment artifacts for OpenReflect and external memory systems.
-- Public-safe validation of synthetic artifact records.
-
-## Design principles
-
-- Preserve plain text as the fallback source of truth.
-- Keep visual emphasis sparse, meaningful, and reversible.
-- Separate live collaboration from durable memory enrichment.
-- Prefer structured artifacts over transcript dumping.
-- Keep public framework code separate from private operational data.
-- Make every automated update inspectable before it becomes durable state.
-
-## Repository layout
-
-```text
-.
-├── AGENTS.md
-├── README.md
-├── ROADMAP.md
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── CONVERSATION-SURFACE-MODEL.md
-│   ├── FEATURE-MAP.md
-│   └── PRD.md
-├── examples/
-│   ├── conversation-artifact.example.json
-│   ├── highlight-artifact.example.json
-│   ├── staged-card-artifact.example.json
-│   ├── turn-queue.example.json
-│   └── static-highlight-demo.html
-├── prompts/
-│   └── validate-artifact.prompt.md
-├── refined-lumen-light/
-│   ├── PRD.md
-│   ├── docs/
-│   ├── server/
-│   └── src/
-├── schemas/
-│   └── conversation-artifact.schema.json
-├── scripts/
-│   └── validate_artifact.py
-├── src/
-│   └── static-highlighter/
-│       └── lumen-light.js
-└── prototypes/
-    └── lumen-light-whiteboard-prototype/
-```
-
-## Current status
-
-Lumen Light is being consolidated around the canvas-first Beacon Table app in
-`refined-lumen-light/`. The root-level implementation still defines the
-evidence-linked briefing/review contract, artifact schema, synthetic examples,
-deterministic validation script, and browser demo that should be ported forward.
-
-The conversation-surface model consolidates earlier prototype lessons into public primitives: turns, normalized items, staged changes, live surface state, and artifact export packets.
-
-See `docs/FEATURE-MAP.md` for the master feature map and roadmap.
-See `ROADMAP.md` for the staged public development path.
-See `docs/TRUNK-BASELINE-PLAN-2026-06-24.md` for the current trunk promotion
-plan.
-
-Run the current canvas-first app:
+Copy the example env file (gitignored) and add your OpenAI key:
 
 ```bash
-cd refined-lumen-light
+cp .env.local.example .env.local
+```
+
+```bash
+OPENAI_API_KEY=sk-...
+OPENAI_REALTIME_MODEL=gpt-realtime-2
+OPENAI_REALTIME_VOICE=marin
+```
+
+The key is required for the realtime voice/text collaborator.
+
+> Security: the API key is used **only** by the dev server to mint short-lived
+> ephemeral tokens (`/api/realtime/token`). It is never bundled into the browser.
+> Never commit `.env.local`.
+
+## Run it
+
+```bash
 npm install
 npm run dev
 ```
 
-Run its verification gates:
+Open the printed URL (default http://localhost:5180/).
 
-```bash
-cd refined-lumen-light
-npm run typecheck
-npm run build
-```
+**Voice:** click **Start voice session**, allow microphone access, and think out
+loud. The agent speaks back and diagrams what you say on the canvas.
 
-Run the public-safe eval:
-
-```bash
-python3 -m pip install -r requirements.txt
-python3 scripts/validate_artifact.py examples/conversation-artifact.example.json
-python3 scripts/validate_artifact.py examples/highlight-artifact.example.json
-python3 scripts/validate_artifact.py examples/staged-card-artifact.example.json
-python3 -m unittest discover -s test
-node --check src/static-highlighter/lumen-light.js
-```
-
-Open the static demo in a browser:
+**Text:** type into the panel and press Enter. In a live session this goes to the
+realtime model. For example:
 
 ```text
-examples/static-highlight-demo.html
+research -> draft -> review -> ship
 ```
 
-## Briefing review demo
+## Commands
 
-The briefing review demo is the first assistant/operator-controlled product
-loop: load source material, step through scripted agent briefing turns, watch
-the referenced source span highlight, accept/reject/edit the staged artifacts,
-project the reviewed artifacts into the visual surface, and export the accepted
-packet as JSON. There is no voice or model call in this slice — it runs off a
-deterministic fixture — but Excalidraw/whiteboard projection is part of the
-intended integrated surface from the beginning.
+| Command | Description |
+|---------|-------------|
+| `npm install` | Install dependencies. |
+| `npm run dev` | Start the dev server (http://localhost:5180). |
+| `npm run build` | Typecheck + production build. |
+| `npm run typecheck` | Types only (no emit). |
+| `npm run preview` | Preview the production build. |
 
-Run the Node test harness (artifact state machine + source anchoring):
+## Architecture (the important seam)
 
-```bash
-npm test
-```
-
-Open the demo locally. It fetches a JSON fixture, so serve over HTTP rather
-than opening the file directly:
-
-```bash
-python3 -m http.server 8787
-```
+Input modality is decoupled from canvas behavior. Voice and text both resolve to
+the same `draw_flow` action, which is projected onto the canvas:
 
 ```text
-http://localhost:8787/examples/briefing-review-demo.html
+voice (mic) ─┐                              ┌─► draw_flow tool call ─┐
+             ├─► OpenAI Realtime session ───┤                        ├─► canvas
+text (live) ─┘     (gpt-realtime-2)         └─► spoken/text reply    ┘   (TLDraw)
 ```
 
-Manual loop: click a briefing turn (or use Next/Previous), confirm the source
-span highlights and that the artifact appears as a card on the Excalidraw
-projection board (the active turn's card is focused). Accept one artifact and
-reject or edit another, and watch the projection update — accepted/edited cards
-restyle and rejected cards drop out of the board. Then click "Export accepted" —
-the packet should contain accepted artifacts only, each with a source span
-reference. "Debug export (all)" includes every state, and the "Show rejected
-(debug)" toggle re-includes rejected cards in the projection.
+Server (dev):
 
-The Excalidraw projection is a *view* of Lumen artifact state, not a source of
-truth. Artifacts are mapped deterministically into Excalidraw skeleton element
-JSON (the same shape the whiteboard prototype feeds to
-`convertToExcalidrawElements`) and re-projected on every change; the element JSON
-is never made durable.
+- `server/realtimePlugin.ts` — Vite dev endpoint `/api/realtime/token` that mints
+  an ephemeral Realtime client secret. Holds the API key, configures the session
+  instructions + `draw_flow` tool. The key never reaches the browser.
 
-Relevant files:
+Client:
 
-```text
-src/briefing-review/state.js                  artifact state machine + export packet
-src/briefing-review/source-pane.js            scoped source span anchoring + rendering
-src/briefing-review/excalidraw-projection.js  deterministic artifact -> Excalidraw mapping
-src/briefing-review/demo.js                   browser demo controller (operator actions)
-examples/briefing-session.example.json        synthetic fixture
-examples/briefing-review-demo.html            demo page
-test/briefing-review/                         Node tests for anchoring, state, projection
-```
+- `src/realtime/RealtimeClient.ts` — WebRTC peer connection, mic capture, model
+  audio playback, data-channel events, and function-call handling
+  (`response.function_call_arguments.done` → run tool → `function_call_output`
+  → `response.create`).
+- `src/canvas/drawFlow.ts` — projects a `FlowDiagram` onto TLDraw shapes. The
+  canvas is a *view* of assistant output, re-projected on each call; never the
+  source of truth.
+- `src/canvas/normalizeFlow.ts` — defensively coerces tool-call args into a valid
+  `FlowDiagram` before touching the canvas.
+- `src/assistant/types.ts` — shared `FlowDiagram` / action / provider contract.
+- `src/canvas/LumenCanvas.tsx` — the TLDraw surface.
+- `src/ui/ConversationPanel.tsx` — text input + session controls + transcripts.
+- `src/App.tsx` — wires inputs → tool calls → canvas.
 
-Expected validator output:
+### Canvas vocabulary
 
-```text
-LUMEN_LIGHT_ARTIFACT_OK
-```
+The model has two drawing tools:
 
-## Public/private model
+- **`draw_canvas`** (primary) — the full whiteboard vocabulary. Each element is
+  one of:
+  - `shape` — any TLDraw geo (rectangle, ellipse, triangle, diamond, hexagon,
+    star, cloud, heart, …) with optional `color`, `fill`, `size`, `w`/`h`.
+  - `note` — a sticky note.
+  - `text` — a free text label.
+  - `connector` — an arrow bound between two elements (`from`/`to` ids).
 
-Use this repository as the generic upstream. Keep environment-specific customizations in private downstream repositories or private branches.
+  Mind maps, concept maps, comparisons, hierarchies, brainstorms — not just
+  flowcharts. See `src/canvas/drawCanvas.ts`.
 
-```text
-empathos/lumen-light     public generic framework
-private downstream fork  local credentials, IDs, deployment, logs
-```
+- **`draw_flow`** (shortcut) — quick linear flowcharts. Node kinds map to geo
+  shapes (start/end → ellipse, decision → diamond, process → rectangle).
 
-This keeps the public framework reusable while preserving operational privacy.
+- **`capture_canvas`** (vision feedback) — screenshots the current canvas
+  (`editor.toImage`) and feeds it back to the model as an `input_image`, so it
+  can *see* how its drawing actually rendered and then call `draw_canvas` again
+  to fix overlaps, spacing, off-screen elements, or misrouted connectors. This
+  closes a look-then-realign loop around coordinate-based layout.
+
+Both draw tools replace what the previous call drew. The canvas is always a view
+of the latest tool call, never the durable source of truth.
+
+Valid style values are validated against TLDraw before drawing (see
+`normalizeCanvasElements`): colors `black, grey, light-violet, violet, blue,
+light-blue, yellow, orange, green, light-green, light-red, red, white`; fills
+`none, semi, solid, pattern, fill`; sizes `s, m, l, xl`.
+
+## Roadmap (near-term)
+
+- Document briefing mode: load a document, brief through it, highlight passages,
+  draw connections (add `highlight_source` + `focus_source` tools).
+- Richer diagram types beyond linear flows.
+- Generated images / media on the canvas.
+- Production token endpoint (the current one is a Vite dev-server middleware).
+
+## Contributing
+
+We work spec-first and record significant decisions as ADRs. Before changing
+behavior, skim [`CONTRIBUTING.md`](./CONTRIBUTING.md), update
+[`docs/SPEC.md`](./docs/SPEC.md) if the contract changes, and add an ADR under
+[`docs/decisions/`](./docs/decisions/) for architectural choices. Run
+`npm run typecheck` and `npm run build` before committing, and never commit
+`.env.local`.

@@ -1,10 +1,9 @@
-node_modules/
-.venv/
-__pycache__/
-*.pyc
+node_modules
+dist
+dist-ssr
+*.local
 .env
 .env.*
-!.env.example
-private/
-*.local.json
-*.private.jsonl
+.DS_Store
+.vite
+*.tsbuildinfo
