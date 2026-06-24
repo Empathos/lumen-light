@@ -19,16 +19,17 @@ interface RealtimeServerEvent {
   [key: string]: unknown
 }
 
-const TOKEN_ENDPOINT = '/api/realtime/token'
-const CALLS_ENDPOINT = 'https://api.openai.com/v1/realtime/calls'
+const ICE_ENDPOINT = '/api/realtime/ice'
+const CALL_ENDPOINT = '/api/realtime/call'
 
 /**
- * Browser WebRTC client for the OpenAI Realtime API.
+ * Browser WebRTC client for the Inworld Realtime API.
  *
- * Flow: fetch an ephemeral token from our server -> open a WebRTC peer
- * connection (mic in, model audio out, data channel for events) -> POST the SDP
- * offer to OpenAI with the ephemeral token. Both voice and typed text are sent
- * through the same session and produce the same tool calls.
+ * Flow: fetch ICE servers from our server -> open a WebRTC peer connection (mic
+ * in, model audio out, data channel for events) -> POST the SDP offer to our
+ * server, which attaches the session config and forwards it to Inworld with the
+ * server-held API key. Both voice and typed text are sent through the same
+ * session and produce the same tool calls.
  */
 export class RealtimeClient {
   private pc?: RTCPeerConnection
@@ -53,14 +54,13 @@ export class RealtimeClient {
     this.setStatus('connecting')
 
     try {
-      const tokenRes = await fetch(TOKEN_ENDPOINT)
-      const tokenText = await tokenRes.text()
-      if (!tokenRes.ok) throw new Error(`token request failed (${tokenRes.status}): ${tokenText}`)
-      const tokenData = JSON.parse(tokenText) as { value?: string }
-      const ephemeralKey = tokenData.value
-      if (!ephemeralKey) throw new Error('No ephemeral token in response')
+      const iceRes = await fetch(ICE_ENDPOINT)
+      const iceText = await iceRes.text()
+      if (!iceRes.ok) throw new Error(`ICE request failed (${iceRes.status}): ${iceText}`)
+      const iceData = JSON.parse(iceText) as { ice_servers?: RTCIceServer[] }
+      const iceServers = iceData.ice_servers ?? []
 
-      const pc = new RTCPeerConnection()
+      const pc = new RTCPeerConnection({ iceServers })
       this.pc = pc
 
       const audioEl = document.createElement('audio')
@@ -99,18 +99,16 @@ export class RealtimeClient {
       const offer = await pc.createOffer()
       await pc.setLocalDescription(offer)
 
-      const sdpRes = await fetch(CALLS_ENDPOINT, {
+      const sdpRes = await fetch(CALL_ENDPOINT, {
         method: 'POST',
-        body: offer.sdp ?? '',
-        headers: {
-          Authorization: `Bearer ${ephemeralKey}`,
-          'Content-Type': 'application/sdp',
-        },
+        body: JSON.stringify({ sdp: offer.sdp ?? '' }),
+        headers: { 'Content-Type': 'application/json' },
       })
       if (!sdpRes.ok) throw new Error(`SDP exchange failed (${sdpRes.status}): ${await sdpRes.text()}`)
 
-      const answerSdp = await sdpRes.text()
-      await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp })
+      const answer = JSON.parse(await sdpRes.text()) as { sdp?: string }
+      if (!answer.sdp) throw new Error('No SDP answer in response')
+      await pc.setRemoteDescription({ type: 'answer', sdp: answer.sdp })
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       this.setStatus('error', message)

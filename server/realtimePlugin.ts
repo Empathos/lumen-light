@@ -2,21 +2,34 @@ import type { Plugin, Connect } from 'vite'
 import type { ServerResponse } from 'node:http'
 
 /**
- * Dev-server endpoint that mints an ephemeral OpenAI Realtime client secret.
+ * Dev-server endpoints that proxy the Inworld Realtime WebRTC handshake.
  *
- * The standard API key NEVER leaves the server. The browser fetches a short-
- * lived ephemeral token (`ek_...`) from `/api/realtime/token`, then connects
- * directly to OpenAI over WebRTC with that token.
+ * Inworld's Realtime API speaks the OpenAI Realtime protocol (data channel
+ * `oai-events`, identical event names), but authenticates the signaling
+ * endpoints with `Authorization: Bearer <API_KEY>` and has no ephemeral-token
+ * mechanism. To keep the key off the client, we proxy the two signaling steps:
  *
- * The session is configured here (instructions + tools), so the realtime model
- * can call Lumen tools (currently `draw_flow`) the moment the session opens.
+ *   GET  /api/realtime/ice   -> Inworld GET  /v1/realtime/ice-servers
+ *   POST /api/realtime/call  -> Inworld POST /v1/realtime/calls (with session)
+ *
+ * The session (instructions + tools + router model + voice stack) is attached
+ * server-side on the call, so the realtime model can call Lumen tools the moment
+ * the session opens. The API key NEVER leaves the server.
  */
 
 export interface RealtimeEnv {
   apiKey?: string
+  /** Inworld router id (preferred) or concrete model id for session.model. */
   model?: string
+  /** Inworld voice name for TTS output. */
   voice?: string
+  /** STT model id; defaults to inworld/inworld-stt-1. */
+  sttModel?: string
+  /** TTS model id; defaults to inworld-tts-2. */
+  ttsModel?: string
 }
+
+const INWORLD_BASE = 'https://api.inworld.ai/v1/realtime'
 
 const INSTRUCTIONS = `You are Lumen, a thinking-canvas collaborator.
 
@@ -188,53 +201,96 @@ function sendJson(res: ServerResponse, status: number, payload: unknown) {
   res.end(JSON.stringify(payload))
 }
 
+function readBody(req: Connect.IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let data = ''
+    req.on('data', (chunk) => {
+      data += chunk
+    })
+    req.on('end', () => resolve(data))
+    req.on('error', reject)
+  })
+}
+
+/** The session config attached to every Inworld call (model, voice, tools). */
+function buildSession(env: RealtimeEnv) {
+  return {
+    type: 'realtime',
+    model: env.model || 'inworld/lumen-router',
+    instructions: INSTRUCTIONS,
+    output_modalities: ['audio', 'text'],
+    audio: {
+      input: {
+        transcription: { model: env.sttModel || 'inworld/inworld-stt-1' },
+        turn_detection: { type: 'semantic_vad', eagerness: 'medium' },
+      },
+      output: {
+        model: env.ttsModel || 'inworld-tts-2',
+        voice: env.voice || 'Ashley',
+        speed: 1.0,
+      },
+    },
+    tools: [DRAW_CANVAS_TOOL, DRAW_FLOW_TOOL, CAPTURE_CANVAS_TOOL],
+    tool_choice: 'auto',
+  }
+}
+
 export function lumenRealtimePlugin(env: RealtimeEnv): Plugin {
   return {
     name: 'lumen-realtime',
     configureServer(server) {
+      // Step 1: hand the browser STUN/TURN config (key stays here).
       server.middlewares.use(
-        '/api/realtime/token',
+        '/api/realtime/ice',
         async (_req: Connect.IncomingMessage, res: ServerResponse) => {
           if (!env.apiKey) {
-            sendJson(res, 500, {
-              error: 'OPENAI_API_KEY is not set. Add it to .env.local.',
-            })
+            sendJson(res, 500, { error: 'INWORLD_API_KEY is not set. Add it to .env.local.' })
             return
           }
-
-          const sessionConfig = {
-            session: {
-              type: 'realtime',
-              model: env.model || 'gpt-realtime-2',
-              instructions: INSTRUCTIONS,
-              audio: {
-                input: {
-                  transcription: { model: 'gpt-4o-mini-transcribe' },
-                },
-                output: { voice: env.voice || 'marin' },
-              },
-              tools: [DRAW_CANVAS_TOOL, DRAW_FLOW_TOOL, CAPTURE_CANVAS_TOOL],
-              tool_choice: 'auto',
-            },
-          }
-
           try {
-            const r = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${env.apiKey}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(sessionConfig),
+            const r = await fetch(`${INWORLD_BASE}/ice-servers`, {
+              headers: { Authorization: `Bearer ${env.apiKey}` },
             })
             const text = await r.text()
             res.statusCode = r.status
             res.setHeader('content-type', 'application/json')
             res.end(text)
           } catch (err) {
-            sendJson(res, 500, {
-              error: err instanceof Error ? err.message : String(err),
+            sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) })
+          }
+        },
+      )
+
+      // Step 2: proxy the SDP offer to Inworld with the session config attached,
+      // return the SDP answer. The API key never reaches the browser.
+      server.middlewares.use(
+        '/api/realtime/call',
+        async (req: Connect.IncomingMessage, res: ServerResponse) => {
+          if (!env.apiKey) {
+            sendJson(res, 500, { error: 'INWORLD_API_KEY is not set. Add it to .env.local.' })
+            return
+          }
+          try {
+            const body = await readBody(req)
+            const { sdp } = JSON.parse(body || '{}') as { sdp?: string }
+            if (!sdp) {
+              sendJson(res, 400, { error: 'Missing sdp offer in request body.' })
+              return
+            }
+            const r = await fetch(`${INWORLD_BASE}/calls`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${env.apiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ sdp, session: buildSession(env) }),
             })
+            const text = await r.text()
+            res.statusCode = r.status
+            res.setHeader('content-type', 'application/json')
+            res.end(text)
+          } catch (err) {
+            sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) })
           }
         },
       )

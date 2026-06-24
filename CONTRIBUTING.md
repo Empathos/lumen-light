@@ -8,13 +8,13 @@ codebase stays coherent. Read it alongside the [SPEC](docs/SPEC.md),
 
 ```bash
 npm install
-cp .env.local.example .env.local   # then add your OPENAI_API_KEY (if any)
+cp .env.local.example .env.local   # then add your INWORLD_API_KEY (if any)
 npm run dev                         # http://localhost:5180
 ```
 
-Realtime voice/text requires an OpenAI API key. Keep the key in `.env.local`;
-never commit it.
-A key only unlocks the live voice/text Realtime session.
+Realtime voice/text requires an Inworld API key (and a router — see the README).
+Keep the key in `.env.local`; never commit it. A key only unlocks the live
+voice/text Realtime session; the offline mock provider works without one.
 
 ## How we work
 

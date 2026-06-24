@@ -11,6 +11,7 @@ deleted; when a decision changes, a new ADR supersedes the old one.
 | [0003](ADR-0003-canvas-as-projection.md) | The canvas is a projection of tool calls, not the source of truth | Accepted |
 | [0004](ADR-0004-full-tldraw-vocabulary.md) | Expose the full TLDraw vocabulary via `draw_canvas` | Accepted |
 | [0005](ADR-0005-screenshot-feedback-loop.md) | Screenshot vision feedback loop (`capture_canvas`) | Accepted |
+| [0007](ADR-0007-inworld-realtime-provider.md) | Inworld Realtime provider (proxied signaling + router) | Accepted (branch `v0.5-inworld-62426`) |
 
 ## Status values
 

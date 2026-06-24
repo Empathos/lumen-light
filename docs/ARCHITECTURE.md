@@ -6,7 +6,7 @@ the reasoning behind specific choices see [`decisions/`](decisions/).
 
 ## One-line model
 
-A TLDraw canvas is the stage; an OpenAI Realtime agent (voice **or** text) calls
+A TLDraw canvas is the stage; an Inworld Realtime agent (voice **or** text) calls
 Lumen tools to draw on it as the conversation happens.
 
 ## The central seam: input modality is decoupled from canvas behavior
@@ -18,10 +18,14 @@ adding voice without redesigning anything.
 
 ```text
 voice (mic) ─┐                                ┌─► draw_canvas ─┐
-             ├─► OpenAI Realtime session ─────┤  draw_flow      ├─► TLDraw canvas
-text (live) ─┘     (gpt-realtime-2, WebRTC)   ├─► capture_canvas ┘   (a projection)
+             ├─► Inworld Realtime session ────┤  draw_flow      ├─► TLDraw canvas
+text (live) ─┘   (router brain + WebRTC)      ├─► capture_canvas ┘   (a projection)
                                               └─► spoken/text reply
 ```
+
+Inworld speaks the OpenAI Realtime protocol (data channel `oai-events`, identical
+events), so only the connection + session-config layer is provider-specific
+(see [ADR-0007](decisions/ADR-0007-inworld-realtime-provider.md)).
 
 ## Components
 
@@ -43,20 +47,21 @@ text (live) ─┘     (gpt-realtime-2, WebRTC)   ├─► capture_canvas ┘  
 
 | Module | Responsibility |
 |--------|----------------|
-| `server/realtimePlugin.ts` | Vite dev-server middleware exposing `POST /api/realtime/token`. Mints an ephemeral OpenAI client secret and embeds the session instructions + tool definitions. The standard API key stays here and never reaches the browser. |
+| `server/realtimePlugin.ts` | Vite dev-server middleware exposing `GET /api/realtime/ice` and `POST /api/realtime/call`. Proxies the Inworld WebRTC signaling — fetches ICE servers and forwards the SDP offer with the session config (router model, instructions, voice stack, tools). The API key stays here and never reaches the browser. |
 
-> The token endpoint is currently a Vite **dev** middleware. A production
+> The signaling endpoints are currently a Vite **dev** middleware. A production
 > deployment needs an equivalent trusted endpoint (see
-> [`decisions/ADR-0002-openai-realtime-webrtc.md`](decisions/ADR-0002-openai-realtime-webrtc.md)).
+> [`decisions/ADR-0007-inworld-realtime-provider.md`](decisions/ADR-0007-inworld-realtime-provider.md)).
 
 ## Request / event flow
 
 ### Live session (voice or text)
 
-1. User clicks **Start voice session**. `RealtimeClient.connect()` fetches an
-   ephemeral token from `/api/realtime/token`.
-2. It opens a `RTCPeerConnection` (mic track in, model audio out, `oai-events`
-   data channel) and completes the SDP handshake with `…/v1/realtime/calls`.
+1. User clicks **Start voice session**. `RealtimeClient.connect()` fetches ICE
+   servers from `/api/realtime/ice`.
+2. It opens a `RTCPeerConnection({ iceServers })` (mic track in, model audio out,
+   `oai-events` data channel), then POSTs its SDP offer to `/api/realtime/call`,
+   which forwards it to Inworld (with the session config) and returns the answer.
 3. User speaks or types. The model decides to call a tool.
 4. The client receives `response.function_call_arguments.done`, runs the tool
    via `App`'s `onToolCall`, then replies with `function_call_output` +
@@ -79,8 +84,9 @@ Full schemas and behaviors are in [`SPEC.md`](SPEC.md).
   replaces what the previous call drew; the durable record is the tool-call
   intent, not TLDraw's element JSON.
   ([ADR-0003](decisions/ADR-0003-canvas-as-projection.md))
-- **The API key is server-side only.** The browser uses short-lived ephemeral
-  tokens. ([ADR-0002](decisions/ADR-0002-openai-realtime-webrtc.md))
+- **The API key is server-side only.** Inworld's realtime signaling uses a Bearer
+  key with no ephemeral-token option, so the dev server proxies the handshake.
+  ([ADR-0007](decisions/ADR-0007-inworld-realtime-provider.md))
 - **Untrusted args are validated before they touch the canvas.** See
   `normalizeFlow.ts` / `normalizeCanvasElements`.
 - **Tool args are validated against real TLDraw enums.** Style values
@@ -91,11 +97,12 @@ Full schemas and behaviors are in [`SPEC.md`](SPEC.md).
 
 - React 18 + TypeScript 5, bundled by Vite 5.
 - TLDraw 3.15 as the canvas/render engine.
-- OpenAI Realtime API (`gpt-realtime-2`) over WebRTC for voice + text + tools.
+- Inworld Realtime API over WebRTC for voice + text + tools; LLM via an Inworld
+  router, voice via `inworld-tts-2` / `inworld-stt-1` / `semantic_vad`.
 
 ## Known constraints
 
-- The token endpoint is dev-only (Vite middleware).
+- The signaling endpoints are dev-only (Vite middleware).
 - Realtime image input must ride in a `user`-role message; the screenshot is
   labelled as an automated capture so the model doesn't thank the user for it.
 - The production bundle is large (TLDraw); code-splitting is a future task.

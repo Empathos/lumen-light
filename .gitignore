@@ -4,6 +4,7 @@ dist-ssr
 *.local
 .env
 .env.*
+!.env.local.example
 .DS_Store
 .vite
 *.tsbuildinfo

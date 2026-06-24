@@ -1,7 +1,9 @@
 # ADR-0002: OpenAI Realtime over WebRTC with ephemeral tokens
 
 ## Status
-Accepted
+Accepted (transport/auth specifics superseded on branch `v0.5-inworld-62426` by
+[ADR-0007](ADR-0007-inworld-realtime-provider.md); the key-stays-server-side
+principle still holds)
 
 ## Date
 2026-06-24

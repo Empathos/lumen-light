@@ -17,8 +17,9 @@ the canvas, and input modality (voice/text) makes no difference to behavior.
 
 - React 18, TypeScript 5, Vite 5
 - TLDraw 3.15 (canvas)
-- OpenAI Realtime API `gpt-realtime-2` over WebRTC (voice + text + tools)
-- No backend beyond a Vite dev middleware for token minting
+- Inworld Realtime API over WebRTC (voice + text + tools); LLM via an Inworld
+  router, voice via `inworld-tts-2` + `inworld-stt-1` + `semantic_vad`
+- No backend beyond a Vite dev middleware that proxies the WebRTC signaling
 
 ## Commands
 
@@ -33,9 +34,10 @@ Types:   npm run typecheck
 Environment (`.env.local`, gitignored):
 
 ```text
-OPENAI_API_KEY=sk-...
-OPENAI_REALTIME_MODEL=gpt-realtime-2
-OPENAI_REALTIME_VOICE=marin
+INWORLD_API_KEY=your-inworld-api-key
+INWORLD_REALTIME_MODEL=inworld/lumen-router   # router id (see scripts/create-inworld-router.sh)
+INWORLD_REALTIME_VOICE=Ashley
+# optional: INWORLD_STT_MODEL=inworld/inworld-stt-1, INWORLD_TTS_MODEL=inworld-tts-2
 ```
 
 ## Project Structure
@@ -45,7 +47,9 @@ OPENAI_REALTIME_VOICE=marin
 ├── index.html
 ├── package.json, tsconfig*.json, vite.config.ts
 ├── server/
-│   └── realtimePlugin.ts        # /api/realtime/token (mints ephemeral secret)
+│   └── realtimePlugin.ts        # /api/realtime/{ice,call} (proxies Inworld signaling)
+├── scripts/
+│   └── create-inworld-router.sh # one-shot Inworld router creation
 ├── src/
 │   ├── main.tsx, App.tsx, styles.css, vite-env.d.ts
 │   ├── assistant/               # shared assistant contracts

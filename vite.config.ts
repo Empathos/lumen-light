@@ -8,9 +8,11 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       lumenRealtimePlugin({
-        apiKey: env.OPENAI_API_KEY,
-        model: env.OPENAI_REALTIME_MODEL,
-        voice: env.OPENAI_REALTIME_VOICE,
+        apiKey: env.INWORLD_API_KEY,
+        model: env.INWORLD_REALTIME_MODEL,
+        voice: env.INWORLD_REALTIME_VOICE,
+        sttModel: env.INWORLD_STT_MODEL,
+        ttsModel: env.INWORLD_TTS_MODEL,
       }),
     ],
     server: {

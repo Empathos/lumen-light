@@ -23,34 +23,51 @@ See [`PRD.md`](./PRD.md) for the product vision and scope.
 
 ## Status
 
-Early scaffold. Working today:
+Branch `v0.5-inworld-62426`. Working today:
 
 - TLDraw canvas as the main surface.
-- **OpenAI Realtime voice + text session** (`gpt-realtime-2` over WebRTC) where
-  the model calls a `draw_flow` tool to diagram the conversation live.
+- **Inworld Realtime voice + text session** over WebRTC, where the model calls
+  the `draw_canvas` / `draw_flow` / `capture_canvas` tools to diagram the
+  conversation live. The "brain" is an Inworld **router** (advanced model +
+  fallback); the voice is Inworld's `inworld-tts-2` with `semantic_vad`.
+- An **offline fallback**: with no live session, typed text uses a deterministic
+  local parser so the app is useful with no keys/network.
 
 Both voice and typed text drive the **same** tool calls / canvas actions, so the
 input modality is fully decoupled from canvas behavior.
 
 ## Setup
 
-Copy the example env file (gitignored) and add your OpenAI key:
+Copy the example env file (gitignored) and add your Inworld key:
 
 ```bash
 cp .env.local.example .env.local
 ```
 
 ```bash
-OPENAI_API_KEY=sk-...
-OPENAI_REALTIME_MODEL=gpt-realtime-2
-OPENAI_REALTIME_VOICE=marin
+INWORLD_API_KEY=your-inworld-api-key
+INWORLD_REALTIME_MODEL=inworld/lumen-router   # a router id (see below)
+INWORLD_REALTIME_VOICE=Ashley
 ```
 
-The key is required for the realtime voice/text collaborator.
+Create the router the model uses as its brain (one advanced model + a fallback):
 
-> Security: the API key is used **only** by the dev server to mint short-lived
-> ephemeral tokens (`/api/realtime/token`). It is never bundled into the browser.
-> Never commit `.env.local`.
+```bash
+INWORLD_API_KEY=... ./scripts/create-inworld-router.sh
+# override defaults if you like:
+#   ROUTER_NAME=lumen-router PRIMARY_MODEL=... FALLBACK_MODEL=... \
+#   INWORLD_API_KEY=... ./scripts/create-inworld-router.sh
+```
+
+Or create it in the Inworld Portal (Routers → new router) and copy its
+`inworld/<name>` id into `INWORLD_REALTIME_MODEL`. The key is required for the
+live collaborator; the offline parser works without it.
+
+> Security: the API key is used **only** by the dev server, which proxies the
+> WebRTC signaling to Inworld (`/api/realtime/ice` and `/api/realtime/call`).
+> Inworld's realtime signaling uses a Bearer API key (no ephemeral token), so we
+> keep it server-side rather than handing it to the browser. Never commit
+> `.env.local`.
 
 ## Run it
 
@@ -65,7 +82,7 @@ Open the printed URL (default http://localhost:5180/).
 loud. The agent speaks back and diagrams what you say on the canvas.
 
 **Text:** type into the panel and press Enter. In a live session this goes to the
-realtime model. For example:
+realtime model; offline it uses the local parser. For example:
 
 ```text
 research -> draft -> review -> ship
@@ -84,24 +101,33 @@ research -> draft -> review -> ship
 ## Architecture (the important seam)
 
 Input modality is decoupled from canvas behavior. Voice and text both resolve to
-the same `draw_flow` action, which is projected onto the canvas:
+the same draw tool calls, which are projected onto the canvas:
 
 ```text
-voice (mic) ─┐                              ┌─► draw_flow tool call ─┐
-             ├─► OpenAI Realtime session ───┤                        ├─► canvas
-text (live) ─┘     (gpt-realtime-2)         └─► spoken/text reply    ┘   (TLDraw)
+voice (mic) ─┐                                ┌─► draw_canvas / draw_flow ─┐
+             ├─► Inworld Realtime session ────┤  capture_canvas            ├─► canvas
+text (live) ─┘  (router brain + inworld-tts)  └─► spoken/text reply        ┘  (TLDraw)
+
+text (offline) ─► MockAssistantProvider ──────► draw_flow ──────────────────► canvas
 ```
+
+Inworld speaks the OpenAI Realtime protocol (data channel `oai-events`, same
+events), so only the connection + session-config layer is Inworld-specific.
 
 Server (dev):
 
-- `server/realtimePlugin.ts` — Vite dev endpoint `/api/realtime/token` that mints
-  an ephemeral Realtime client secret. Holds the API key, configures the session
-  instructions + `draw_flow` tool. The key never reaches the browser.
+- `server/realtimePlugin.ts` — Vite dev endpoints that proxy the Inworld WebRTC
+  handshake: `GET /api/realtime/ice` (STUN/TURN config) and
+  `POST /api/realtime/call` (forwards the SDP offer with the session config —
+  router model, instructions, voice stack, tools — to Inworld). Holds the API
+  key; it never reaches the browser. See
+  [ADR-0007](./docs/decisions/ADR-0007-inworld-realtime-provider.md).
 
 Client:
 
-- `src/realtime/RealtimeClient.ts` — WebRTC peer connection, mic capture, model
-  audio playback, data-channel events, and function-call handling
+- `src/realtime/RealtimeClient.ts` — fetches ICE servers, opens the WebRTC peer
+  connection (mic capture, model audio playback, data channel), does the proxied
+  SDP exchange, and handles function calls
   (`response.function_call_arguments.done` → run tool → `function_call_output`
   → `response.create`).
 - `src/canvas/drawFlow.ts` — projects a `FlowDiagram` onto TLDraw shapes. The
@@ -152,7 +178,8 @@ light-blue, yellow, orange, green, light-green, light-red, red, white`; fills
   draw connections (add `highlight_source` + `focus_source` tools).
 - Richer diagram types beyond linear flows.
 - Generated images / media on the canvas.
-- Production token endpoint (the current one is a Vite dev-server middleware).
+- Router experiments: A/B model variants and conditional (metadata/CEL) routing.
+- Production signaling endpoint (the current proxy is a Vite dev-server middleware).
 
 ## Contributing
 
