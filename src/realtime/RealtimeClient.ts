@@ -15,9 +15,14 @@ interface RealtimeServerEvent {
   name?: string
   arguments?: string
   call_id?: string
+  delta?: string
+  backchannel_id?: string
   error?: { message?: string }
   [key: string]: unknown
 }
+
+/** Inworld backchannel audio is PCM16 mono at this rate (session output format default). */
+const BACKCHANNEL_SAMPLE_RATE = 24000
 
 const ICE_ENDPOINT = '/api/realtime/ice'
 const CALL_ENDPOINT = '/api/realtime/call'
@@ -39,6 +44,12 @@ export class RealtimeClient {
   private micStream?: MediaStream
   private status: RealtimeStatus = 'idle'
   private sessionConfig?: Record<string, unknown>
+  // Web Audio path for backchannel interjections ("mm-hm" while the user talks).
+  // These arrive as base64 PCM over the data channel, NOT on the WebRTC audio
+  // track, so we decode and schedule them ourselves. They are deliberately not
+  // ducked, so they stay audible while the user holds the floor.
+  private audioCtx?: AudioContext
+  private backchannelNextTime = 0
 
   constructor(private readonly callbacks: RealtimeCallbacks = {}) {}
 
@@ -54,6 +65,20 @@ export class RealtimeClient {
   async connect(): Promise<void> {
     if (this.status === 'connecting' || this.status === 'connected') return
     this.setStatus('connecting')
+
+    // connect() is triggered by a user click, so creating the AudioContext here
+    // satisfies browser autoplay policy for backchannel playback.
+    try {
+      type AudioCtor = typeof AudioContext
+      const Ctor: AudioCtor | undefined =
+        window.AudioContext ?? (window as unknown as { webkitAudioContext?: AudioCtor }).webkitAudioContext
+      if (Ctor) {
+        this.audioCtx = new Ctor()
+        this.backchannelNextTime = 0
+      }
+    } catch {
+      /* backchannel playback simply won't run */
+    }
 
     try {
       const iceRes = await fetch(ICE_ENDPOINT)
@@ -187,6 +212,11 @@ export class RealtimeClient {
       return
     }
 
+    if (event.type === 'response.backchannel.audio.delta') {
+      if (typeof event.delta === 'string') this.playBackchannelChunk(event.delta)
+      return
+    }
+
     if (event.type === 'response.function_call_arguments.done') {
       await this.handleFunctionCall(event)
       return
@@ -254,7 +284,46 @@ export class RealtimeClient {
     this.send({ type: 'response.create' })
   }
 
+  /** Decode one base64 PCM16 backchannel chunk and schedule it gapless. */
+  private playBackchannelChunk(b64: string) {
+    const ctx = this.audioCtx
+    if (!ctx) return
+    try {
+      if (ctx.state === 'suspended') void ctx.resume()
+      const binary = atob(b64)
+      const byteLen = binary.length
+      const bytes = new Uint8Array(byteLen)
+      for (let i = 0; i < byteLen; i++) bytes[i] = binary.charCodeAt(i)
+
+      const sampleCount = Math.floor(byteLen / 2)
+      if (sampleCount === 0) return
+      const view = new DataView(bytes.buffer)
+      const samples = new Float32Array(sampleCount)
+      for (let i = 0; i < sampleCount; i++) {
+        // PCM16 little-endian -> normalized float.
+        samples[i] = view.getInt16(i * 2, true) / 32768
+      }
+
+      const buffer = ctx.createBuffer(1, sampleCount, BACKCHANNEL_SAMPLE_RATE)
+      buffer.copyToChannel(samples, 0)
+      const source = ctx.createBufferSource()
+      source.buffer = buffer
+      source.connect(ctx.destination)
+
+      const startAt = Math.max(ctx.currentTime, this.backchannelNextTime)
+      source.start(startAt)
+      this.backchannelNextTime = startAt + buffer.duration
+    } catch {
+      /* drop malformed chunk */
+    }
+  }
+
   private cleanup() {
+    if (this.audioCtx) {
+      void this.audioCtx.close().catch(() => {})
+      this.audioCtx = undefined
+    }
+    this.backchannelNextTime = 0
     this.micStream?.getTracks().forEach((t) => t.stop())
     this.micStream = undefined
     try {

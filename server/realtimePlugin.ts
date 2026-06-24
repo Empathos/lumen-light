@@ -272,9 +272,9 @@ function buildSession(env: RealtimeEnv) {
     // CREATIVE delivery is the expressive TTS-2 preset (STABLE/BALANCED flatten
     // prosody); full_turn buffers the whole turn for best intonation; emit_once
     // is the recommended steering handling for TTS-2; responsiveness fillers
-    // cover LLM warmup and play on the normal audio track (no client work).
-    // (backchannel is intentionally omitted: its audio arrives as data-channel
-    // PCM events that need bespoke client playback we haven't built yet.)
+    // cover LLM warmup and play on the normal audio track. backchannel emits
+    // "mm-hm"/"right" while the user is still speaking — its audio arrives as
+    // base64 PCM on the data channel and is played client-side (RealtimeClient).
     providerData: {
       tts: {
         delivery_mode: 'CREATIVE',
@@ -282,6 +282,7 @@ function buildSession(env: RealtimeEnv) {
         steering_handling: 'emit_once',
       },
       responsiveness: { enabled: true },
+      backchannel: { enabled: true },
     },
     tools: [DRAW_CANVAS_TOOL, DRAW_FLOW_TOOL, CAPTURE_CANVAS_TOOL],
     tool_choice: 'auto',
