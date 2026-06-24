@@ -86,8 +86,8 @@ export function ConversationPanel({
               Try: <code>research -&gt; draft -&gt; review -&gt; ship</code>
             </p>
             <p className="muted">
-              Without a session, typed text uses a local parser. In a session, the
-              realtime model drives the canvas.
+              The realtime model is the product path. Local typed input is only
+              a development aid for exercising the canvas loop.
             </p>
           </div>
         )}

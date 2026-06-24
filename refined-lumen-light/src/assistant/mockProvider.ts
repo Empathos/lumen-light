@@ -70,8 +70,8 @@ export function textToFlow(text: string): FlowDiagram {
 }
 
 /**
- * Deterministic, offline assistant. Stands in for the eventual LLM / realtime
- * provider so the whole canvas loop is testable with no keys or network.
+ * Deterministic local mock. This is development scaffolding for exercising the
+ * canvas loop; the product path is the live realtime collaborator.
  */
 export class MockAssistantProvider implements AssistantProvider {
   readonly name = 'mock'

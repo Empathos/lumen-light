@@ -104,8 +104,8 @@ export function App() {
     else connect()
   }, [connect, disconnect])
 
-  // Text input: routed through the live session when connected, otherwise the
-  // offline deterministic parser so the app is useful without a session.
+  // Text input routes through the live session when connected. Outside a
+  // session, the local mock only exercises the canvas loop during development.
   const handleSend = useCallback(
     async (text: string) => {
       addMessage({ role: 'user', text })

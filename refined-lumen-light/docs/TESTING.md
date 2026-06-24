@@ -21,9 +21,10 @@ Because the core experience is a live canvas, the most valuable check is opening
 it and exercising the flow:
 
 1. `npm run dev`, open http://localhost:5180.
-2. **Offline path:** type `Idea -> Sketch -> Build -> Ship` and confirm a flow
-   diagram renders. This needs no key and exercises
-   `mockProvider → drawFlow → TLDraw`.
+2. **Local dev mock:** type `Idea -> Sketch -> Build -> Ship` before starting a
+   session and confirm a flow diagram renders. This is development scaffolding
+   for exercising `mockProvider -> drawFlow -> TLDraw`, not a product
+   requirement.
 3. **Live path (needs a key):** start a session, speak or type an open-ended
    prompt, and confirm the agent calls `draw_canvas` with varied shapes/notes,
    and occasionally `capture_canvas` to realign.
