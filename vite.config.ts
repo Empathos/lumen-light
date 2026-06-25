@@ -13,6 +13,8 @@ export default defineConfig(({ mode }) => {
         voice: env.INWORLD_REALTIME_VOICE,
         sttModel: env.INWORLD_STT_MODEL,
         ttsModel: env.INWORLD_TTS_MODEL,
+        geminiApiKey: env.GEMINI_API_KEY,
+        imageModel: env.GEMINI_IMAGE_MODEL,
       }),
     ],
     // Excalidraw reads process.env.IS_PREACT at runtime; in a browser/Vite build

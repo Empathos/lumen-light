@@ -27,6 +27,10 @@ export interface RealtimeEnv {
   sttModel?: string
   /** TTS model id; defaults to inworld-tts-2. */
   ttsModel?: string
+  /** Google Gemini API key for the generate_image tool. Used server-side only. */
+  geminiApiKey?: string
+  /** Gemini image model ("Nano Banana"); defaults to gemini-2.5-flash-image. */
+  imageModel?: string
 }
 
 const INWORLD_BASE = 'https://api.inworld.ai/v1/realtime'
@@ -57,6 +61,12 @@ auto-arrange.
 
 draw_flow is a shortcut for simple linear step-by-step processes only; prefer
 draw_canvas for everything richer.
+
+generate_image creates an actual picture (illustration, icon, mascot, reference
+image) and drops it on the canvas. Reach for it when the idea is genuinely
+visual and shapes/text can't capture it — not for things you can diagram. It
+takes a few seconds, so say something brief first ("let me sketch that"). These
+images stay put; draw_canvas/draw_flow won't erase them.
 
 Always pass the COMPLETE set of elements you want visible — each call replaces
 what the previous call drew. Speak briefly and naturally while you draw; the
@@ -224,6 +234,32 @@ const CAPTURE_CANVAS_TOOL = {
   },
 }
 
+const GENERATE_IMAGE_TOOL = {
+  type: 'function',
+  name: 'generate_image',
+  description:
+    'Generate an image from a text prompt and place it on the canvas as a real picture (e.g. an illustration, icon, logo sketch, mascot, diagram asset, photo-style reference). Use this when the user asks to "draw/show/picture/imagine" something visual that line shapes cannot express. Takes a few seconds — say something brief first. Generated images persist on the canvas and are NOT cleared by draw_canvas/draw_flow.',
+  parameters: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['prompt'],
+    properties: {
+      prompt: {
+        type: 'string',
+        description:
+          'A vivid, self-contained description of the image to generate. Include subject, style, and mood. For a clean asset on the whiteboard, ask for a plain white (or simple) background in the prompt.',
+      },
+      aspect: {
+        type: 'string',
+        enum: ['square', 'portrait', 'landscape'],
+        description: 'Optional aspect ratio. Defaults to square.',
+      },
+      x: { type: 'number', description: 'Optional canvas x in pixels. Omit to auto-place beside existing content.' },
+      y: { type: 'number', description: 'Optional canvas y in pixels.' },
+    },
+  },
+}
+
 function sendJson(res: ServerResponse, status: number, payload: unknown) {
   res.statusCode = status
   res.setHeader('content-type', 'application/json')
@@ -284,7 +320,7 @@ function buildSession(env: RealtimeEnv) {
       responsiveness: { enabled: true },
       backchannel: { enabled: true },
     },
-    tools: [DRAW_CANVAS_TOOL, DRAW_FLOW_TOOL, CAPTURE_CANVAS_TOOL],
+    tools: [DRAW_CANVAS_TOOL, DRAW_FLOW_TOOL, CAPTURE_CANVAS_TOOL, GENERATE_IMAGE_TOOL],
     tool_choice: 'auto',
   }
 }
@@ -355,6 +391,78 @@ export function lumenRealtimePlugin(env: RealtimeEnv): Plugin {
             res.statusCode = r.status
             res.setHeader('content-type', 'application/json')
             res.end(text)
+          } catch (err) {
+            sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) })
+          }
+        },
+      )
+
+      // generate_image tool backend: proxy a prompt to Google Gemini image
+      // generation ("Nano Banana") and return an image data URL. Gemini is
+      // ~4-6x faster than gpt-image-1 (~1-5s), which matters for live voice.
+      // The API key never reaches the browser.
+      server.middlewares.use(
+        '/api/image/generate',
+        async (req: Connect.IncomingMessage, res: ServerResponse) => {
+          if (req.method !== 'POST') {
+            sendJson(res, 405, { error: 'Use POST.' })
+            return
+          }
+          if (!env.geminiApiKey) {
+            sendJson(res, 500, { error: 'GEMINI_API_KEY is not set. Add it to .env.local.' })
+            return
+          }
+          try {
+            const body = await readBody(req)
+            const { prompt, aspect } = JSON.parse(body || '{}') as {
+              prompt?: string
+              aspect?: string
+            }
+            if (!prompt || typeof prompt !== 'string') {
+              sendJson(res, 400, { error: 'Missing prompt.' })
+              return
+            }
+            const aspectRatio =
+              aspect === 'portrait' ? '3:4' : aspect === 'landscape' ? '4:3' : '1:1'
+            const model = env.imageModel || 'gemini-2.5-flash-image'
+            const r = await fetch(
+              `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+              {
+                method: 'POST',
+                headers: {
+                  'x-goog-api-key': env.geminiApiKey,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  contents: [{ parts: [{ text: prompt }] }],
+                  generationConfig: {
+                    // Both modalities are required: omitting TEXT makes Gemini
+                    // return an empty parts array with no error.
+                    responseModalities: ['TEXT', 'IMAGE'],
+                    imageConfig: { aspectRatio },
+                  },
+                }),
+              },
+            )
+            const data = (await r.json()) as {
+              candidates?: {
+                content?: { parts?: { inlineData?: { mimeType?: string; data?: string } }[] }
+              }[]
+              error?: { message?: string }
+            }
+            if (!r.ok) {
+              sendJson(res, r.status, { error: data?.error?.message || 'image generation failed' })
+              return
+            }
+            const part = data?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData?.data)
+            const inline = part?.inlineData
+            if (!inline?.data) {
+              sendJson(res, 502, { error: 'No image returned by Gemini.' })
+              return
+            }
+            sendJson(res, 200, {
+              dataURL: `data:${inline.mimeType || 'image/png'};base64,${inline.data}`,
+            })
           } catch (err) {
             sendJson(res, 500, { error: err instanceof Error ? err.message : String(err) })
           }
