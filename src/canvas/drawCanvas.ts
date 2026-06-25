@@ -1,21 +1,21 @@
-import { createShapeId, toRichText, type Editor, type TLShapeId } from 'tldraw'
+import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types'
+import type { ExcalidrawElementSkeleton } from '@excalidraw/excalidraw/data/transform'
+import { commitSkeleton, connectorPoints, type Rect } from './excalidrawScene'
 
 /**
- * A general, free-form canvas vocabulary. Unlike `drawFlow` (which only knows
- * about linear flowcharts), this exposes most of what TLDraw can draw: any geo
- * shape, sticky notes, free text labels, and connectors — with colors, fills,
- * sizes, and positions. The realtime model fills these in via the `draw_canvas`
- * tool.
+ * A general, free-form canvas vocabulary projected onto Excalidraw. Unlike
+ * `drawFlow` (which only knows linear flowcharts), this exposes the shapes
+ * Excalidraw can draw: its three generic shapes, free text, sticky-style notes,
+ * and bound connectors — with colors, fills, sizes, and positions. The realtime
+ * model fills these in via the `draw_canvas` tool.
  *
- * The canvas remains a *view*: each call replaces the shapes created by the
- * previous call (shapes the user adds by hand are left alone).
+ * The canvas remains a *view*: each call replaces the elements created by the
+ * previous call (elements the user adds by hand are left alone).
  */
 
-export const GEO_SHAPES = [
-  'cloud', 'rectangle', 'ellipse', 'triangle', 'diamond', 'pentagon', 'hexagon',
-  'octagon', 'star', 'rhombus', 'rhombus-2', 'oval', 'trapezoid', 'arrow-right',
-  'arrow-left', 'arrow-up', 'arrow-down', 'x-box', 'check-box', 'heart',
-] as const
+// Excalidraw only has three generic closed shapes. This is the documented
+// trade-off vs. TLDraw's richer geo set; anything else falls back to rectangle.
+export const GEO_SHAPES = ['rectangle', 'ellipse', 'diamond'] as const
 
 export const CANVAS_COLORS = [
   'black', 'grey', 'light-violet', 'violet', 'blue', 'light-blue', 'yellow',
@@ -46,6 +46,59 @@ export interface CanvasElement {
   size?: CanvasSize
   from?: string
   to?: string
+}
+
+// Stroke (and bound-label) color: the saturated, readable version of each color.
+const COLOR_HEX: Record<CanvasColor, string> = {
+  black: '#1e1e1e',
+  grey: '#495057',
+  'light-violet': '#7048e8',
+  violet: '#6741d9',
+  blue: '#1971c2',
+  'light-blue': '#1c7ed6',
+  yellow: '#f08c00',
+  orange: '#e8590c',
+  green: '#2f9e44',
+  'light-green': '#37b24d',
+  'light-red': '#f03e3e',
+  red: '#e03131',
+  white: '#343a40',
+}
+
+// Background fill: a light tint so a dark stroke + bound label stay readable.
+const TINT_HEX: Record<CanvasColor, string> = {
+  black: '#e9ecef',
+  grey: '#e9ecef',
+  'light-violet': '#e5dbff',
+  violet: '#d0bfff',
+  blue: '#a5d8ff',
+  'light-blue': '#d0ebff',
+  yellow: '#ffec99',
+  orange: '#ffd8a8',
+  green: '#b2f2bb',
+  'light-green': '#d3f9d8',
+  'light-red': '#ffe3e3',
+  red: '#ffc9c9',
+  white: '#f8f9fa',
+}
+
+const FONT_SIZE: Record<CanvasSize, number> = { s: 16, m: 20, l: 28, xl: 36 }
+const STROKE_WIDTH: Record<CanvasSize, number> = { s: 1, m: 2, l: 2, xl: 4 }
+type FillStyle = 'hachure' | 'cross-hatch' | 'solid'
+
+function strokeColor(color?: CanvasColor): string {
+  return color ? COLOR_HEX[color] : '#1e1e1e'
+}
+
+function fillFor(
+  fill?: CanvasFill,
+  color?: CanvasColor,
+): { backgroundColor: string; fillStyle?: FillStyle } {
+  if (!fill || fill === 'none') return { backgroundColor: 'transparent' }
+  const bg = color ? TINT_HEX[color] : '#a5d8ff'
+  if (fill === 'semi') return { backgroundColor: bg, fillStyle: 'hachure' }
+  if (fill === 'pattern') return { backgroundColor: bg, fillStyle: 'cross-hatch' }
+  return { backgroundColor: bg, fillStyle: 'solid' }
 }
 
 function oneOf<T extends readonly string[]>(
@@ -105,122 +158,114 @@ const GRID_COLS = 4
 const ORIGIN_X = 120
 const ORIGIN_Y = 120
 
-export function drawCanvasElements(
-  editor: Editor,
-  elements: CanvasElement[],
-  previousIds: TLShapeId[] = [],
-): TLShapeId[] {
-  if (previousIds.length) {
-    const existing = previousIds.filter((id) => editor.getShape(id))
-    if (existing.length) editor.deleteShapes(existing)
-  }
+// Prefix so assistant element ids are stable and distinct from user-drawn ones.
+const skeletonId = (id: string) => `lumen-${id}`
 
-  const created: TLShapeId[] = []
-  const idMap = new Map<string, TLShapeId>()
+export function drawCanvasElements(
+  api: ExcalidrawImperativeAPI,
+  elements: CanvasElement[],
+): number {
+  const skeleton: ExcalidrawElementSkeleton[] = []
+  const rects = new Map<string, Rect>()
   let autoIndex = 0
 
-  editor.run(() => {
-    // Pass 1: nodes (shapes, notes, text).
-    for (const el of elements) {
-      if (el.type === 'connector') continue
+  // Pass 1: nodes (shapes, notes, text).
+  for (const el of elements) {
+    if (el.type === 'connector') continue
 
-      let x = el.x
-      let y = el.y
-      if (x === undefined || y === undefined) {
-        const col = autoIndex % GRID_COLS
-        const row = Math.floor(autoIndex / GRID_COLS)
-        x = ORIGIN_X + col * GRID_X
-        y = ORIGIN_Y + row * GRID_Y
-        autoIndex++
-      }
-
-      const id = createShapeId()
-      idMap.set(el.id, id)
-      created.push(id)
-
-      if (el.type === 'text') {
-        editor.createShape({
-          id,
-          type: 'text',
-          x,
-          y,
-          props: {
-            richText: toRichText(el.text ?? ''),
-            ...(el.color ? { color: el.color } : {}),
-            ...(el.size ? { size: el.size } : {}),
-          },
-        })
-      } else if (el.type === 'note') {
-        editor.createShape({
-          id,
-          type: 'note',
-          x,
-          y,
-          props: {
-            richText: toRichText(el.text ?? ''),
-            ...(el.color ? { color: el.color } : {}),
-            ...(el.size ? { size: el.size } : {}),
-          },
-        })
-      } else {
-        editor.createShape({
-          id,
-          type: 'geo',
-          x,
-          y,
-          props: {
-            geo: el.geo ?? 'rectangle',
-            w: el.w ?? 200,
-            h: el.h ?? 120,
-            richText: toRichText(el.text ?? ''),
-            align: 'middle',
-            verticalAlign: 'middle',
-            ...(el.color ? { color: el.color } : {}),
-            ...(el.fill ? { fill: el.fill } : {}),
-            ...(el.size ? { size: el.size } : {}),
-          },
-        })
-      }
+    let x = el.x
+    let y = el.y
+    if (x === undefined || y === undefined) {
+      const col = autoIndex % GRID_COLS
+      const row = Math.floor(autoIndex / GRID_COLS)
+      x = ORIGIN_X + col * GRID_X
+      y = ORIGIN_Y + row * GRID_Y
+      autoIndex++
     }
 
-    // Pass 2: connectors (arrows bound to nodes).
-    for (const el of elements) {
-      if (el.type !== 'connector') continue
-      const fromId = el.from ? idMap.get(el.from) : undefined
-      const toId = el.to ? idMap.get(el.to) : undefined
-      if (!fromId || !toId) continue
+    const id = skeletonId(el.id)
 
-      const arrowId = createShapeId()
-      created.push(arrowId)
-      editor.createShape({
-        id: arrowId,
-        type: 'arrow',
-        props: {
-          text: el.text ?? '',
-          ...(el.color ? { color: el.color } : {}),
-          ...(el.size ? { size: el.size } : {}),
-        },
+    if (el.type === 'text') {
+      const fontSize = FONT_SIZE[el.size ?? 'm']
+      const text = el.text ?? ''
+      rects.set(el.id, { x, y, w: Math.max(40, text.length * fontSize * 0.55), h: fontSize * 1.4 })
+      skeleton.push({
+        type: 'text',
+        id,
+        x,
+        y,
+        text,
+        fontSize,
+        strokeColor: strokeColor(el.color),
       })
-      editor.createBindings([
-        {
-          fromId: arrowId,
-          toId: fromId,
-          type: 'arrow',
-          props: { terminal: 'start', normalizedAnchor: { x: 0.5, y: 0.5 }, isExact: false, isPrecise: false },
-        },
-        {
-          fromId: arrowId,
-          toId: toId,
-          type: 'arrow',
-          props: { terminal: 'end', normalizedAnchor: { x: 0.5, y: 0.5 }, isExact: false, isPrecise: false },
-        },
-      ])
+      continue
     }
-  })
 
-  if (created.length) {
-    editor.zoomToFit({ animation: { duration: 250 } })
+    const w = el.w ?? 200
+    const h = el.h ?? 120
+    rects.set(el.id, { x, y, w, h })
+
+    if (el.type === 'note') {
+      // Excalidraw has no native sticky note; emulate with a filled, rounded
+      // rectangle carrying a centered label. Dark stroke keeps the label legible.
+      skeleton.push({
+        type: 'rectangle',
+        id,
+        x,
+        y,
+        width: w,
+        height: h,
+        strokeColor: '#1e1e1e',
+        backgroundColor: el.color ? TINT_HEX[el.color] : '#ffec99',
+        fillStyle: 'solid',
+        roundness: { type: 3 },
+        ...(el.text ? { label: { text: el.text } } : {}),
+      })
+      continue
+    }
+
+    // type === 'shape'
+    const { backgroundColor, fillStyle } = fillFor(el.fill, el.color)
+    skeleton.push({
+      type: el.geo ?? 'rectangle',
+      id,
+      x,
+      y,
+      width: w,
+      height: h,
+      strokeColor: strokeColor(el.color),
+      strokeWidth: STROKE_WIDTH[el.size ?? 'm'],
+      backgroundColor,
+      ...(fillStyle ? { fillStyle } : {}),
+      ...(el.text ? { label: { text: el.text } } : {}),
+    })
   }
 
-  return created
+  // Pass 2: connectors (arrows routed border-to-border, bound for dragging).
+  for (const el of elements) {
+    if (el.type !== 'connector') continue
+    const from = el.from ? rects.get(el.from) : undefined
+    const to = el.to ? rects.get(el.to) : undefined
+    if (!from || !to) continue
+
+    const { start, end } = connectorPoints(from, to)
+    skeleton.push({
+      type: 'arrow',
+      x: start.x,
+      y: start.y,
+      width: end.x - start.x,
+      height: end.y - start.y,
+      points: [
+        [0, 0],
+        [end.x - start.x, end.y - start.y],
+      ],
+      strokeColor: strokeColor(el.color),
+      strokeWidth: STROKE_WIDTH[el.size ?? 'm'],
+      start: { id: skeletonId(el.from!) },
+      end: { id: skeletonId(el.to!) },
+      ...(el.text ? { label: { text: el.text } } : {}),
+    })
+  }
+
+  return commitSkeleton(api, skeleton)
 }

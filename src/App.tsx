@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Editor, TLShapeId } from 'tldraw'
+import { exportToBlob } from '@excalidraw/excalidraw'
+import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types'
 import { LumenCanvas } from './canvas/LumenCanvas'
 import { drawFlowDiagram } from './canvas/drawFlow'
 import { normalizeFlowDiagram } from './canvas/normalizeFlow'
@@ -10,8 +11,7 @@ import { RealtimeClient, type RealtimeStatus } from './realtime/RealtimeClient'
 import type { ConversationEntry } from './assistant/types'
 
 export function App() {
-  const editorRef = useRef<Editor | null>(null)
-  const drawnIdsRef = useRef<TLShapeId[]>([])
+  const apiRef = useRef<ExcalidrawImperativeAPI | null>(null)
   const mockRef = useRef(new MockAssistantProvider())
   const clientRef = useRef<RealtimeClient | null>(null)
 
@@ -24,37 +24,38 @@ export function App() {
     setMessages((prev) => [...prev, entry])
   }, [])
 
-  const handleReady = useCallback((editor: Editor) => {
-    editorRef.current = editor
+  const handleReady = useCallback((api: ExcalidrawImperativeAPI) => {
+    apiRef.current = api
   }, [])
 
   const drawFlowFromArgs = useCallback((args: unknown) => {
-    if (!editorRef.current) return { ok: false, error: 'canvas not ready' }
+    if (!apiRef.current) return { ok: false, error: 'canvas not ready' }
     const diagram = normalizeFlowDiagram(args)
     if (diagram.nodes.length === 0) return { ok: false, error: 'no nodes' }
-    drawnIdsRef.current = drawFlowDiagram(editorRef.current, diagram, drawnIdsRef.current)
+    drawFlowDiagram(apiRef.current, diagram)
     return { ok: true, nodes: diagram.nodes.length, edges: diagram.edges.length }
   }, [])
 
   const drawCanvasFromArgs = useCallback((args: unknown) => {
-    if (!editorRef.current) return { ok: false, error: 'canvas not ready' }
+    if (!apiRef.current) return { ok: false, error: 'canvas not ready' }
     const elements = normalizeCanvasElements(args)
     if (elements.length === 0) return { ok: false, error: 'no elements' }
-    drawnIdsRef.current = drawCanvasElements(editorRef.current, elements, drawnIdsRef.current)
+    drawCanvasElements(apiRef.current, elements)
     return { ok: true, elements: elements.length }
   }, [])
 
   const captureCanvas = useCallback(async () => {
-    const editor = editorRef.current
-    if (!editor) return { ok: false, error: 'canvas not ready' }
-    const ids = [...editor.getCurrentPageShapeIds()]
-    if (ids.length === 0) return { ok: true, empty: true, note: 'canvas is empty' }
+    const api = apiRef.current
+    if (!api) return { ok: false, error: 'canvas not ready' }
+    const elements = api.getSceneElements()
+    if (elements.length === 0) return { ok: true, empty: true, note: 'canvas is empty' }
     try {
-      const { blob } = await editor.toImage(ids, {
-        format: 'png',
-        background: true,
-        padding: 32,
-        pixelRatio: 1,
+      const blob = await exportToBlob({
+        elements,
+        appState: { ...api.getAppState(), exportBackground: true, viewBackgroundColor: '#ffffff' },
+        files: api.getFiles(),
+        mimeType: 'image/png',
+        exportPadding: 32,
       })
       const image = await blobToDataUrl(blob)
       return { ok: true, image }

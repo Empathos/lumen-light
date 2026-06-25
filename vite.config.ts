@@ -15,6 +15,11 @@ export default defineConfig(({ mode }) => {
         ttsModel: env.INWORLD_TTS_MODEL,
       }),
     ],
+    // Excalidraw reads process.env.IS_PREACT at runtime; in a browser/Vite build
+    // `process` is undefined, so we statically replace it to avoid a crash.
+    define: {
+      'process.env.IS_PREACT': JSON.stringify('false'),
+    },
     server: {
       port: 5180,
       host: true,

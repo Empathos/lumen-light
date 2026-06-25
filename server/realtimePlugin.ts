@@ -48,10 +48,12 @@ fits the idea:
 - connectors (type "connector" with from/to element ids) to show relationships
 
 Use color and fill meaningfully (e.g. green for positive, red for risk, yellow
-sticky notes for raw ideas). Vary shapes — circles, diamonds, clouds, stars,
-hexagons — when it helps meaning. Give every element a unique "id" so connectors
-can reference them. You may set x/y (canvas pixels, ~250px apart) to control
-layout, or omit them to auto-arrange.
+sticky notes for raw ideas). The shape vocabulary is rectangle, ellipse, and
+diamond — use ellipse for entities/people, diamond for decisions, rectangle for
+everything else, and lean on color, fill, notes, and labels to carry meaning.
+Give every element a unique "id" so connectors can reference them. You may set
+x/y (canvas pixels, ~250px apart) to control layout, or omit them to
+auto-arrange.
 
 draw_flow is a shortcut for simple linear step-by-step processes only; prefer
 draw_canvas for everything richer.
@@ -152,11 +154,9 @@ const DRAW_FLOW_TOOL = {
   },
 }
 
-const GEO_SHAPES = [
-  'cloud', 'rectangle', 'ellipse', 'triangle', 'diamond', 'pentagon', 'hexagon',
-  'octagon', 'star', 'rhombus', 'rhombus-2', 'oval', 'trapezoid', 'arrow-right',
-  'arrow-left', 'arrow-up', 'arrow-down', 'x-box', 'check-box', 'heart',
-]
+// Excalidraw's three generic closed shapes. (Excalidraw has no native
+// triangle/star/cloud/etc.; richer geo would silently fall back to rectangle.)
+const GEO_SHAPES = ['rectangle', 'ellipse', 'diamond']
 const CANVAS_COLORS = [
   'black', 'grey', 'light-violet', 'violet', 'blue', 'light-blue', 'yellow',
   'orange', 'green', 'light-green', 'light-red', 'red', 'white',

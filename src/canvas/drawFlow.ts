@@ -1,10 +1,7 @@
-import {
-  createShapeId,
-  toRichText,
-  type Editor,
-  type TLShapeId,
-} from 'tldraw'
+import type { ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types'
+import type { ExcalidrawElementSkeleton } from '@excalidraw/excalidraw/data/transform'
 import type { FlowDiagram, FlowNodeKind } from '../assistant/types'
+import { commitSkeleton, connectorPoints, type Rect } from './excalidrawScene'
 
 const NODE_W = 220
 const NODE_H = 90
@@ -26,97 +23,58 @@ function geoFor(kind: FlowNodeKind): GeoType {
   }
 }
 
+const skeletonId = (id: string) => `lumen-${id}`
+
 /**
- * Project a FlowDiagram onto the TLDraw canvas.
+ * Project a FlowDiagram onto the Excalidraw canvas.
  *
  * The canvas is a *view* of assistant output, never the source of truth, so each
- * redraw deletes the shapes from the previous projection (passed in via
- * `previousIds`) and returns the ids it created for the next call to clean up.
- * Shapes the user adds or edits by hand are left untouched.
+ * redraw replaces the previous assistant projection (tracked via `customData`)
+ * while leaving anything the user drew by hand untouched.
  */
 export function drawFlowDiagram(
-  editor: Editor,
+  api: ExcalidrawImperativeAPI,
   diagram: FlowDiagram,
-  previousIds: TLShapeId[] = [],
-): TLShapeId[] {
-  if (previousIds.length) {
-    const existing = previousIds.filter((id) => editor.getShape(id))
-    if (existing.length) editor.deleteShapes(existing)
-  }
+): number {
+  const skeleton: ExcalidrawElementSkeleton[] = []
+  const rects = new Map<string, Rect>()
 
-  const createdIds: TLShapeId[] = []
-  const nodeShapeIds = new Map<string, TLShapeId>()
-
-  editor.run(() => {
-    diagram.nodes.forEach((node, i) => {
-      const id = createShapeId()
-      nodeShapeIds.set(node.id, id)
-      createdIds.push(id)
-      editor.createShape({
-        id,
-        type: 'geo',
-        x: ORIGIN_X,
-        y: ORIGIN_Y + i * GAP_Y,
-        props: {
-          geo: geoFor(node.kind),
-          w: NODE_W,
-          h: NODE_H,
-          richText: toRichText(node.label),
-          align: 'middle',
-          verticalAlign: 'middle',
-          size: 's',
-        },
-      })
-    })
-
-    diagram.edges.forEach((edge) => {
-      const fromId = nodeShapeIds.get(edge.from)
-      const toId = nodeShapeIds.get(edge.to)
-      if (!fromId || !toId) return
-
-      const arrowId = createShapeId()
-      createdIds.push(arrowId)
-      editor.createShape({
-        id: arrowId,
-        type: 'arrow',
-        props: {
-          // NOTE: in this tldraw version the arrow shape uses a plain `text`
-          // string for its label, while geo shapes use `richText`.
-          text: edge.label ?? '',
-          size: 's',
-        },
-      })
-
-      editor.createBindings([
-        {
-          fromId: arrowId,
-          toId: fromId,
-          type: 'arrow',
-          props: {
-            terminal: 'start',
-            normalizedAnchor: { x: 0.5, y: 1 },
-            isExact: false,
-            isPrecise: false,
-          },
-        },
-        {
-          fromId: arrowId,
-          toId: toId,
-          type: 'arrow',
-          props: {
-            terminal: 'end',
-            normalizedAnchor: { x: 0.5, y: 0 },
-            isExact: false,
-            isPrecise: false,
-          },
-        },
-      ])
+  diagram.nodes.forEach((node, i) => {
+    const rect: Rect = { x: ORIGIN_X, y: ORIGIN_Y + i * GAP_Y, w: NODE_W, h: NODE_H }
+    rects.set(node.id, rect)
+    skeleton.push({
+      type: geoFor(node.kind),
+      id: skeletonId(node.id),
+      x: rect.x,
+      y: rect.y,
+      width: rect.w,
+      height: rect.h,
+      strokeColor: '#1e1e1e',
+      label: { text: node.label },
     })
   })
 
-  if (createdIds.length) {
-    editor.zoomToFit({ animation: { duration: 250 } })
-  }
+  diagram.edges.forEach((edge) => {
+    const from = rects.get(edge.from)
+    const to = rects.get(edge.to)
+    if (!from || !to) return
+    const { start, end } = connectorPoints(from, to)
+    skeleton.push({
+      type: 'arrow',
+      x: start.x,
+      y: start.y,
+      width: end.x - start.x,
+      height: end.y - start.y,
+      points: [
+        [0, 0],
+        [end.x - start.x, end.y - start.y],
+      ],
+      strokeColor: '#1e1e1e',
+      start: { id: skeletonId(edge.from) },
+      end: { id: skeletonId(edge.to) },
+      ...(edge.label ? { label: { text: edge.label } } : {}),
+    })
+  })
 
-  return createdIds
+  return commitSkeleton(api, skeleton)
 }
