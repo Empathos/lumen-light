@@ -19,6 +19,12 @@
 #   PRIMARY_MODEL=google-ai-studio/gemini-3.5-flash
 #   FALLBACK_MODEL=google-ai-studio/gemini-2.5-flash
 #
+# NOTE: avoid OpenAI gpt-5.x as the realtime primary — Inworld routes the LLM via
+# /v1/chat/completions, where OpenAI rejects "function tools + reasoning_effort"
+# for gpt-5.x (and Lumen always sends tools). Anthropic/Gemini "flash"/"haiku"
+# tiers support tools cleanly. The session sets reasoning effort to NONE for low
+# realtime latency regardless.
+#
 # After it runs, copy the returned router id (inworld/<name>) into
 # INWORLD_REALTIME_MODEL in .env.local.
 set -euo pipefail
